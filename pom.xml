@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2015-2016 The OpenZipkin Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+    in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the License
+    is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+    or implied. See the License for the specific language governing permissions and limitations under
+    the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.zipkin.finagle</groupId>
+  <artifactId>zipkin-finagle-parent_2.11</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>kafka</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
+
+    <!-- default bytecode version for src/main -->
+    <main.java.version>1.7</main.java.version>
+    <main.signature.artifact>java17</main.signature.artifact>
+
+    <!-- default bytecode version for src/test -->
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+
+    <main.basedir>${project.basedir}</main.basedir>
+
+    <scala.version>2.11.8</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
+    <finagle.version>6.36.0</finagle.version>
+    <libthrift.version>0.9.3</libthrift.version>
+    <scalatest.version>2.2.6</scalatest.version>
+    <junit.version>4.12</junit.version>
+
+    <scala-maven-plugin.version>3.2.2</scala-maven-plugin.version>
+    <maven-plugin.version>0.3.3</maven-plugin.version>
+    <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
+    <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
+    <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
+    <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
+    <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
+    <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
+    <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
+  </properties>
+
+  <name>Zipkin Finagle (Parent)</name>
+  <description>Zipkin Finagle (Parent)</description>
+  <url>https://github.com/openzipkin/zipkin-finagle</url>
+  <inceptionYear>2016</inceptionYear>
+
+  <organization>
+    <name>OpenZipkin</name>
+    <url>http://zipkin.io/</url>
+  </organization>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <url>https://github.com/openzipkin/zipkin-finagle</url>
+    <connection>scm:git:https://github.com/openzipkin/zipkin-finagle.git</connection>
+    <developerConnection>scm:git:https://github.com/openzipkin/zipkin-finagle.git
+    </developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>sveinnfannar</id>
+      <name>Sveinn Fannar</name>
+      <email>sveinnfannar@gmail.com</email>
+    </developer>
+  </developers>
+
+  <distributionManagement>
+    <repository>
+      <id>bintray</id>
+      <url>https://api.bintray.com/maven/openzipkin/maven/zipkin-finagle/;publish=1</url>
+    </repository>
+    <snapshotRepository>
+      <id>jfrog-snapshots</id>
+      <url>http://oss.jfrog.org/artifactory/oss-snapshot-local</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <issueManagement>
+    <system>Github</system>
+    <url>https://github.com/openzipkin/zipkin-finagle/issues</url>
+  </issueManagement>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>zipkin-finagle-kafka_2.11</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.thrift</groupId>
+        <artifactId>libthrift</artifactId>
+        <version>${libthrift.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.twitter</groupId>
+      <artifactId>finagle-zipkin-core_${scala.binary.version}</artifactId>
+      <version>${finagle.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${scala.binary.version}</artifactId>
+      <version>${scalatest.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <sourceDirectory>src/main/scala</sourceDirectory>
+    <testSourceDirectory>src/test/scala</testSourceDirectory>
+
+    <pluginManagement>
+      <plugins>
+        <!-- mvn -N io.takari:maven:wrapper -Dmaven=3.3.9 -->
+        <plugin>
+          <groupId>io.takari</groupId>
+          <artifactId>maven</artifactId>
+          <version>${maven-plugin.version}</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${maven-jar-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-maven-plugin</artifactId>
+        <version>1.0</version>
+        <configuration>
+          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <id>test</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <inherited>true</inherited>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+        <executions>
+          <!-- Ensure main source tree compiles to Java ${main.java.version} bytecode. -->
+          <execution>
+            <id>default-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <source>${main.java.version}</source>
+              <target>${main.java.version}</target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>${scala-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <args>
+            <arg>-target:jvm-${main.java.version}</arg>
+          </args>
+        </configuration>
+      </plugin>
+
+      <!-- Ensures checksums are added to published jars -->
+      <plugin>
+        <artifactId>maven-install-plugin</artifactId>
+        <version>${maven-install-plugin.version}</version>
+        <configuration>
+          <createChecksum>true</createChecksum>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>${maven-release-plugin.version}</version>
+        <configuration>
+          <useReleaseProfile>false</useReleaseProfile>
+          <releaseProfiles>release</releaseProfiles>
+          <autoVersionSubmodules>true</autoVersionSubmodules>
+          <tagNameFormat>@{project.version}</tagNameFormat>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>io.zipkin.centralsync-maven-plugin</groupId>
+        <artifactId>centralsync-maven-plugin</artifactId>
+        <version>0.1.0</version>
+        <configuration>
+          <packageName>zipkin-finagle</packageName>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <!-- Creates source jar -->
+          <plugin>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>${maven-source-plugin.version}</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>${maven-javadoc-plugin.version}</version>
+            <configuration>
+              <failOnError>false</failOnError>
+              <additionalparam>-Xdoclint:none</additionalparam>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
