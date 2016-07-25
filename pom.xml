@@ -26,6 +26,7 @@
 
   <modules>
     <module>kafka</module>
+    <module>http</module>
   </modules>
 
   <properties>
@@ -47,6 +48,7 @@
     <finagle.version>6.36.0</finagle.version>
     <libthrift.version>0.9.3</libthrift.version>
     <scalatest.version>2.2.6</scalatest.version>
+    <logback.version>1.1.7</logback.version>
     <junit.version>4.12</junit.version>
 
     <scala-maven-plugin.version>3.2.2</scala-maven-plugin.version>
@@ -147,6 +149,12 @@
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
       <version>${scalatest.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
