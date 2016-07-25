@@ -10,26 +10,27 @@ import com.twitter.finagle.tracing.Tracer
 import com.twitter.finagle.zipkin.core.SamplingTracer
 import com.twitter.util.{Duration, StorageUnit}
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer}
-import zipkin.finagle.{hosts => hostsFlag, initialSampleRate => sampleRateFlag}
+import zipkin.{initialSampleRate => sampleRateFlag}
+import zipkin.kafka.{bootstrapServers => bootstrapServersFlag, topic => topicFlag}
 
 object KafkaZipkinTracer {
   lazy val default: Tracer = mk()
 
   /**
-   * @param hosts initial set of kafka brokers to connect to, rest of the cluster will be discovered
+   * @param bootstrapServers initial set of kafka brokers to connect to, rest of the cluster will be discovered
    * @param topic kafka topic the traces will be sent to
    * @param statsReceiver Where to log information about tracing success/failures
    * @param sampleRate How much data to collect. Default sample rate 0.1%. Max is 1, min 0.
    */
   def mk(
-    hosts: Seq[InetSocketAddress] = hostsFlag(),
-    topic: String = "zipkin",
+    bootstrapServers: Seq[InetSocketAddress] = bootstrapServersFlag(),
+    topic: String = topicFlag(),
     statsReceiver: StatsReceiver = NullStatsReceiver,
     sampleRate: Float = sampleRateFlag()
   ): KafkaZipkinTracer =
     new KafkaZipkinTracer(
       new KafkaRawZipkinTracer(
-        KafkaZipkinTracer.newProducer(hosts), topic, statsReceiver
+        KafkaZipkinTracer.newProducer(bootstrapServers), topic, statsReceiver
       ), sampleRate)
 
   /**
@@ -37,18 +38,18 @@ object KafkaZipkinTracer {
    * @param statsReceiver Where to log information about tracing success/failures
    */
   def mk(statsReceiver: StatsReceiver): Tracer =
-    mk(hosts = hostsFlag(), statsReceiver = statsReceiver, sampleRate = sampleRateFlag())
+    mk(bootstrapServers = bootstrapServersFlag(), statsReceiver = statsReceiver, sampleRate = sampleRateFlag())
 
   /**
-   * @param hosts initial set of kafka brokers to connect to
+   * @param bootstrapServers initial set of kafka brokers to connect to
    * @param maxBufferSize max buffer size for the kafka producer
    */
   private[kafka] def newProducer(
-    hosts: Seq[InetSocketAddress],
+    bootstrapServers: Seq[InetSocketAddress],
     maxBufferSize: StorageUnit = 5.megabytes,
     requestTimeout: Duration = 1.second
   ): Producer[Array[Byte], Array[Byte]] = {
-    val kafkaBootstrapServers = hosts.map(addr =>  s"${addr.getHostName}:${addr.getPort}").mkString(",")
+    val kafkaBootstrapServers = bootstrapServers.map(addr =>  s"${addr.getHostName}:${addr.getPort}").mkString(",")
     val props: Properties = new Properties
     props.put("bootstrap.servers", kafkaBootstrapServers) // Initial brokers to connect to, rest of the cluster will be discovered
     props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
@@ -72,8 +73,8 @@ class KafkaZipkinTracer(
    */
   def this() = this(
     new KafkaRawZipkinTracer(
-      producer = KafkaZipkinTracer.newProducer(hostsFlag()),
-      topic = "zipkin",
-      statsReceiver = DefaultStatsReceiver.scope("zipkin")
+      producer = KafkaZipkinTracer.newProducer(bootstrapServersFlag()),
+      topic = topicFlag(),
+      statsReceiver = DefaultStatsReceiver.scope("zipkin.kafka")
     ), sampleRateFlag())
 }
