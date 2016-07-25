@@ -1,5 +1,32 @@
+[![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin) [![Build Status](https://travis-ci.org/openzipkin/zipkin-dependencies.svg?branch=master)](https://travis-ci.org/openzipkin/zipkin-dependencies) [![Download](https://api.bintray.com/packages/openzipkin/maven/zipkin-dependencies/images/download.svg) ](https://bintray.com/openzipkin/maven/zipkin-dependencies/_latestVersion)
+
 # zipkin-finagle
-Integration between Finagle tracing to Zipkin transports including http and kafka
+Integration between Finagle tracing to Zipkin transports including http and kafka.
+
+## Quick start
+Finagle will use a tracer that it detects in the classpath. For example, depending on `io.zipkin.finagle:zipkin-finagle-http_2.11` will send to Zipkin over Http.
+
+You can look at the [example](https://github.com/openzipkin/zipkin-finagle-example) for this in use.
+
+## Choosing a tracer explicitly
+You can also explicitly choose a tracer, which is more reliable, at the tradeoff of more configuration.
+
+Here an example initializing an http client in scala and java
+```scala
+client = ClientBuilder()
+  .codec(Http().enableTracing(true))
+  .tracer(new HttpZipkinTracer())
+  .name("frontend") // becomes the zipkin service name
+  .hosts("remotehost:8080").build()
+```
+
+```java
+client = ClientBuilder.safeBuild(ClientBuilder.get()
+  .codec(Http.get().enableTracing(true))
+  .tracer(new HttpZipkinTracer())
+  .name("frontend") // becomes the zipkin service name
+  .hosts("remotehost:8080"));
+```
 
 ## Configuration
 zipkin-finagle configuration is via [global flags](https://github.com/twitter/util/blob/master/util-app/src/main/scala/com/twitter/app/Flag.scala).
