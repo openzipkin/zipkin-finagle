@@ -13,48 +13,56 @@
  */
 package zipkin.finagle.kafka;
 
-import com.twitter.finagle.stats.StatsReceiver;
+import com.twitter.util.AbstractClosable;
 import com.twitter.util.Future;
-import com.twitter.util.Promise;
+import com.twitter.util.Time;
+import java.util.List;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import scala.runtime.BoxedUnit;
-import zipkin.finagle.RawZipkinTracer;
+import zipkin.Codec;
+import zipkin.Span;
+import zipkin.storage.AsyncSpanConsumer;
 
 /** Receives the Finagle generated traces and sends them off to Zipkin via Kafka. */
-final class KafkaRawZipkinTracer extends RawZipkinTracer {
-
-  /**
-   * @param producer kafka producer
-   * @param topic kafka topic to send to
-   * @param stats We generate stats to keep track of traces sent, failures and so on
-   */
-  KafkaRawZipkinTracer(Producer<byte[], byte[]> producer, String topic, StatsReceiver stats) {
-    super(stats);
-    this.producer = producer;
-    this.topic = topic;
-  }
-  // XXX(sveinnfannar): Should we override RawZipkinTracer#flush to make sure
-  //                    the kafka producer sends all queued messages
+final class KafkaSpanConsumer extends AbstractClosable implements AsyncSpanConsumer {
 
   final Producer<byte[], byte[]> producer;
   final String topic;
+  /**
+   * @param producer kafka producer
+   * @param topic kafka topic to send to
+   */
+  KafkaSpanConsumer(Producer<byte[], byte[]> producer, String topic) {
+    this.producer = producer;
+    this.topic = topic;
+  }
 
-  @Override protected Future<BoxedUnit> sendSpans(byte[] thrift) {
-    final Promise<BoxedUnit> promise = Promise.apply();
-    // Producer#send appends the message to an internal queue and returns immediately.
-    // Messages are then batch sent asynchronously on another thread and the callback invoked.
+  @Override public void accept(List<Span> spans, final zipkin.storage.Callback<Void> callback) {
+    byte[] thrift;
+    try {
+      thrift = Codec.THRIFT.writeSpans(spans);
+    } catch (RuntimeException e) {
+      callback.onError(e);
+      throw e;
+    }
+
+    // NOTE: this blocks until the metadata server is available
     producer.send(new ProducerRecord(topic, thrift), new Callback() {
       @Override public void onCompletion(RecordMetadata metadata, Exception exception) {
         if (exception == null) {
-          promise.setValue(BoxedUnit.UNIT);
+          callback.onSuccess(null);
         } else {
-          promise.setException(exception);
+          callback.onError(exception);
         }
       }
     });
-    return promise;
+  }
+
+  @Override public Future<BoxedUnit> close(Time deadline) {
+    producer.close(); // TODO: this is blocking
+    return Future.Done();
   }
 }

@@ -14,7 +14,6 @@
 package zipkin.finagle.kafka;
 
 import com.github.charithe.kafka.KafkaJunitRule;
-import com.twitter.finagle.stats.StatsReceiver;
 import com.twitter.finagle.tracing.Annotation.ClientRecv;
 import com.twitter.finagle.tracing.Annotation.ClientSend;
 import com.twitter.finagle.tracing.Annotation.Rpc;
@@ -27,39 +26,34 @@ import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import kafka.serializer.DefaultDecoder;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import scala.Option;
 import zipkin.Codec;
 import zipkin.Span;
-import zipkin.finagle.RawZipkinTracer;
-import zipkin.finagle.RawZipkinTracerTest;
+import zipkin.finagle.ZipkinTracer;
+import zipkin.finagle.ZipkinTracerTest;
 import zipkin.finagle.kafka.KafkaZipkinTracer.Config;
 
 import static com.twitter.util.Time.fromMilliseconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.collection.JavaConversions.mapAsJavaMap;
+import static zipkin.finagle.FinagleTestObjects.TODAY;
+import static zipkin.finagle.FinagleTestObjects.seq;
+import static zipkin.finagle.FinagleTestObjects.root;
 
-public class KafkaRawZipkinTracerTest extends RawZipkinTracerTest {
+public class KafkaZipkinTracerTest extends ZipkinTracerTest {
 
+  final Option<Duration> none = Option.empty(); // avoid having to force generics
   @Rule
   public KafkaJunitRule kafka = new KafkaJunitRule();
+  Config config = Config.builder("localhost:" + kafka.kafkaBrokerPort())
+      .initialSampleRate(1.0f).build();
 
-  Config config = Config.builder("localhost:" + kafka.kafkaBrokerPort()).build();
-
-  @After
-  public void closeProducer() {
-    ((KafkaRawZipkinTracer) tracer).producer.close();
-  }
-
-  @Override protected RawZipkinTracer newTracer(StatsReceiver stats) {
-    Producer<byte[], byte[]> producer = new KafkaProducer<>(config.kafkaProperties());
-    return new KafkaRawZipkinTracer(producer, config.topic(), stats);
+  @Override protected ZipkinTracer newTracer() {
+    return new KafkaZipkinTracer(config, stats);
   }
 
   @Override protected List<List<Span>> getTraces() throws Exception {
@@ -78,23 +72,20 @@ public class KafkaRawZipkinTracerTest extends RawZipkinTracerTest {
   // https://github.com/openzipkin/zipkin-finagle/issues/4
   @Test
   public void whenKafkaIsDown() throws Exception {
-    closeProducer(); // close old producer
-
+    closeTracer();
     // Make a new tracer that fails faster than 60 seconds
     Properties props = config.kafkaProperties();
     props.put(ProducerConfig.METADATA_FETCH_TIMEOUT_CONFIG, Integer.toString(100));
     config = config.toBuilder().kafkaProperties(props).build();
-    tracer = newTracer(stats);
+    createTracer();
 
-    tracer.record(new Record(traceId, fromMilliseconds(TODAY), new ServiceName("web"), none));
-    tracer.record(new Record(traceId, fromMilliseconds(TODAY), new Rpc("get"), none));
-    tracer.record(new Record(traceId, fromMilliseconds(TODAY), new ClientSend(), none));
-    tracer.record(new Record(traceId, fromMilliseconds(TODAY + 1), new ClientRecv(), none));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), none));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), none));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), none));
+    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), none));
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
         entry(seq("log_span", "error", "org.apache.kafka.common.errors.TimeoutException"), 1)
     );
   }
-
-  final Option<Duration> none = Option.empty(); // avoid having to force generics
 }

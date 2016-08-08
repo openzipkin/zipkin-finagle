@@ -29,7 +29,8 @@ public class ZipkinTracerFlagsTest {
 
   @Test
   public void registersGlobalFlags() {
-    assertThat(asJavaCollection(GlobalFlag$.MODULE$.getAll(ZipkinTracerFlags.class.getClassLoader())))
+    assertThat(
+        asJavaCollection(GlobalFlag$.MODULE$.getAll(ZipkinTracerFlags.class.getClassLoader())))
         .containsOnlyOnce(
             ZipkinTracerFlags.initialSampleRate.getGlobalFlag()
         );

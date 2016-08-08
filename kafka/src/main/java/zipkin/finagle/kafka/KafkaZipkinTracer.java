@@ -18,66 +18,36 @@ import com.google.auto.value.AutoValue;
 import com.twitter.finagle.stats.DefaultStatsReceiver$;
 import com.twitter.finagle.stats.NullStatsReceiver;
 import com.twitter.finagle.stats.StatsReceiver;
-import com.twitter.finagle.zipkin.core.SamplingTracer;
+import com.twitter.util.AbstractClosable;
+import com.twitter.util.Closables;
+import com.twitter.util.Future;
+import com.twitter.util.Time;
 import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import scala.runtime.BoxedUnit;
+import zipkin.finagle.ZipkinTracer;
 import zipkin.finagle.ZipkinTracerFlags;
 
 @AutoService(com.twitter.finagle.tracing.Tracer.class)
-public final class KafkaZipkinTracer extends SamplingTracer {
+public final class KafkaZipkinTracer extends ZipkinTracer {
 
-  @AutoValue
-  public static abstract class Config {
-    /**
-     * Creates a builder with the correct defaults derived from {@link KafkaZipkinTracerFlags flags}
-     */
-    public static Builder builder() {
-      return builder(KafkaZipkinTracerFlags.bootstrapServers());
-    }
+  private final KafkaSpanConsumer kafka;
 
-    /**
-     * Creates a builder with the correct defaults derived from {@link KafkaZipkinTracerFlags flags}
-     *
-     * @param bootstrapServers overrides {@link KafkaZipkinTracerFlags#bootstrapServers()}
-     */
-    public static Builder builder(String bootstrapServers) {
-      Properties props = new Properties();
-      props.put("bootstrap.servers", bootstrapServers);
-      props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-      props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-      return new AutoValue_KafkaZipkinTracer_Config.Builder()
-          .kafkaProperties(props)
-          .topic(KafkaZipkinTracerFlags.topic())
-          .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
-    }
+  /**
+   * Default constructor for the service loader
+   */
+  public KafkaZipkinTracer() {
+    this(Config.builder().build(), DefaultStatsReceiver$.MODULE$.get().scope("zipkin.kafka"));
+  }
 
-    public Builder toBuilder() {
-      return new AutoValue_KafkaZipkinTracer_Config.Builder(this);
-    }
+  KafkaZipkinTracer(Config config, StatsReceiver stats) {
+    this(new KafkaSpanConsumer(new KafkaProducer<byte[], byte[]>(config.kafkaProperties()),
+        config.topic()), config, stats);
+  }
 
-    abstract Properties kafkaProperties();
-
-    abstract String topic();
-
-    abstract float initialSampleRate();
-
-    @AutoValue.Builder
-    public interface Builder {
-      /**
-       * Configuration for Kafka producer. Essential configuration properties are:
-       * bootstrap.servers, key.serializer, value.serializer. For a full list of config options, see
-       * http://kafka.apache.org/082/documentation.html#producerconfigs
-       */
-      Builder kafkaProperties(Properties kafkaProperties);
-
-      /** Sets kafka-topic for zipkin to report to. Default topic zipkin. */
-      Builder topic(String topic);
-
-      /** How much data to collect. Default sample rate 0.1%. Max is 1, min 0. */
-      Builder initialSampleRate(float initialSampleRate);
-
-      Config build();
-    }
+  private KafkaZipkinTracer(KafkaSpanConsumer kafka, Config config, StatsReceiver stats) {
+    super(kafka, config, stats);
+    this.kafka = kafka;
   }
 
   /**
@@ -102,15 +72,65 @@ public final class KafkaZipkinTracer extends SamplingTracer {
     return new KafkaZipkinTracer(config, stats);
   }
 
-  /**
-   * Default constructor for the service loader
-   */
-  public KafkaZipkinTracer() {
-    this(Config.builder().build(), DefaultStatsReceiver$.MODULE$.get().scope("zipkin.kafka"));
+  @Override public Future<BoxedUnit> close(Time deadline) {
+    return Closables.sequence(kafka, new AbstractClosable() {
+      @Override public Future<BoxedUnit> close(Time deadline) {
+        return KafkaZipkinTracer.super.close(deadline);
+      }
+    }).close(deadline);
   }
 
-  KafkaZipkinTracer(Config config, StatsReceiver stats) {
-    super(new KafkaRawZipkinTracer(new KafkaProducer<byte[],byte[]>(config.kafkaProperties()),
-        config.topic(), stats), config.initialSampleRate());
+  @AutoValue
+  public static abstract class Config implements ZipkinTracer.Config {
+    /**
+     * Creates a builder with the correct defaults derived from {@link KafkaZipkinTracerFlags
+     * flags}
+     */
+    public static Builder builder() {
+      return builder(KafkaZipkinTracerFlags.bootstrapServers());
+    }
+
+    /**
+     * Creates a builder with the correct defaults derived from {@link KafkaZipkinTracerFlags
+     * flags}
+     *
+     * @param bootstrapServers overrides {@link KafkaZipkinTracerFlags#bootstrapServers()}
+     */
+    public static Builder builder(String bootstrapServers) {
+      Properties props = new Properties();
+      props.put("bootstrap.servers", bootstrapServers);
+      props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+      props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+      return new AutoValue_KafkaZipkinTracer_Config.Builder()
+          .kafkaProperties(props)
+          .topic(KafkaZipkinTracerFlags.topic())
+          .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
+    }
+
+    public Builder toBuilder() {
+      return new AutoValue_KafkaZipkinTracer_Config.Builder(this);
+    }
+
+    abstract Properties kafkaProperties();
+
+    abstract String topic();
+
+    @AutoValue.Builder
+    public interface Builder {
+      /**
+       * Configuration for Kafka producer. Essential configuration properties are:
+       * bootstrap.servers, key.serializer, value.serializer. For a full list of config options, see
+       * http://kafka.apache.org/082/documentation.html#producerconfigs
+       */
+      Builder kafkaProperties(Properties kafkaProperties);
+
+      /** Sets kafka-topic for zipkin to report to. Default topic zipkin. */
+      Builder topic(String topic);
+
+      /** How much data to collect. Default sample rate 0.1%. Max is 1, min 0. */
+      Builder initialSampleRate(float initialSampleRate);
+
+      Config build();
+    }
   }
 }
