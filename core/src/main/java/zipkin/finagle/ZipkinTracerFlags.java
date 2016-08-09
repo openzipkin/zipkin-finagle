@@ -16,15 +16,7 @@ package zipkin.finagle;
 import com.twitter.app.Flag;
 import com.twitter.app.Flaggable$;
 import com.twitter.app.GlobalFlag;
-import com.twitter.finagle.zipkin.core.Sampler$;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import scala.collection.Iterator;
-import scala.collection.Seq;
-import scala.collection.mutable.StringBuilder;
 import scala.runtime.BoxesRunTime;
-
-import static scala.collection.JavaConversions.asScalaBuffer;
 
 /**
  * This class contains flags common to all zipkin tracers
@@ -38,15 +30,16 @@ public final class ZipkinTracerFlags {
   public static final class initialSampleRate$ extends GlobalFlag<Float> {
     public static final initialSampleRate$ MODULE$ = new initialSampleRate$();
 
-    @Override public String name() {
-      return "zipkin.initialSampleRate";
-    }
-
+    // Default is 0.001 = 0.1% (let one in a 1000nd pass)
     private initialSampleRate$() {
       super(
-          BoxesRunTime.boxToFloat(Sampler$.MODULE$.DefaultSampleRate()),
+          BoxesRunTime.boxToFloat(0.001f),
           "Percentage of traces to sample (report to zipkin) in the range [0.0 - 1.0]",
           Flaggable$.MODULE$.ofJavaFloat());
+    }
+
+    @Override public String name() {
+      return "zipkin.initialSampleRate";
     }
   }
 

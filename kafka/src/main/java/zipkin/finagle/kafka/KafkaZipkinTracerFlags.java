@@ -16,13 +16,11 @@ package zipkin.finagle.kafka;
 import com.twitter.app.Flag;
 import com.twitter.app.Flaggable$;
 import com.twitter.app.GlobalFlag;
-import com.twitter.finagle.zipkin.core.Sampler$;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import scala.collection.Iterator;
 import scala.collection.Seq;
 import scala.collection.mutable.StringBuilder;
-import scala.runtime.BoxesRunTime;
 
 import static scala.collection.JavaConversions.asScalaBuffer;
 
@@ -42,17 +40,21 @@ public final class KafkaZipkinTracerFlags {
     return result.toString();
   }
 
+  static String topic() {
+    return topic$.MODULE$.apply();
+  }
+
   public static final class bootstrapServers$ extends GlobalFlag<Seq<InetSocketAddress>> {
     public static final bootstrapServers$ MODULE$ = new bootstrapServers$();
-
-    @Override public String name() {
-      return "zipkin.kafka.bootstrapServers";
-    }
 
     private bootstrapServers$() {
       super(asScalaBuffer(Arrays.asList(new InetSocketAddress("localhost", 9092))),
           "Initial set of kafka servers to connect to, rest of cluster will be discovered (comma separated)",
           Flaggable$.MODULE$.ofSeq(Flaggable$.MODULE$.ofInetSocketAddress()));
+    }
+
+    @Override public String name() {
+      return "zipkin.kafka.bootstrapServers";
     }
   }
 
@@ -62,19 +64,15 @@ public final class KafkaZipkinTracerFlags {
     }
   }
 
-  static String topic() {
-    return topic$.MODULE$.apply();
-  }
-
   public static final class topic$ extends GlobalFlag<String> {
     public static final topic$ MODULE$ = new topic$();
 
-    @Override public String name() {
-      return "zipkin.kafka.topic";
-    }
-
     private topic$() {
       super("zipkin", "Kafka topic zipkin traces will be sent to", Flaggable$.MODULE$.ofString());
+    }
+
+    @Override public String name() {
+      return "zipkin.kafka.topic";
     }
   }
 

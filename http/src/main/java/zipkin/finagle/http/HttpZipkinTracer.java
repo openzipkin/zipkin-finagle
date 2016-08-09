@@ -15,49 +15,36 @@ package zipkin.finagle.http;
 
 import com.google.auto.service.AutoService;
 import com.google.auto.value.AutoValue;
-import com.twitter.finagle.builder.ClientBuilder;
-import com.twitter.finagle.http.Http;
 import com.twitter.finagle.stats.DefaultStatsReceiver$;
 import com.twitter.finagle.stats.NullStatsReceiver;
 import com.twitter.finagle.stats.StatsReceiver;
-import com.twitter.finagle.tracing.NullTracer;
 import com.twitter.finagle.tracing.Tracer;
-import com.twitter.finagle.zipkin.core.SamplingTracer;
+import com.twitter.util.AbstractClosable;
+import com.twitter.util.Closables;
+import com.twitter.util.Future;
+import com.twitter.util.Time;
+import scala.runtime.BoxedUnit;
+import zipkin.finagle.ZipkinTracer;
 import zipkin.finagle.ZipkinTracerFlags;
 
 @AutoService(Tracer.class)
-public final class HttpZipkinTracer extends SamplingTracer {
+public final class HttpZipkinTracer extends ZipkinTracer {
+  private final HttpSpanConsumer http;
 
-  @AutoValue
-  public static abstract class Config {
-    /**
-     * Creates a builder with the correct defaults derived from {@link HttpZipkinTracerFlags flags}
-     */
-    public static Builder builder() {
-      return new AutoValue_HttpZipkinTracer_Config.Builder()
-          .host(HttpZipkinTracerFlags.host())
-          .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
-    }
+  /**
+   * Default constructor for the service loader
+   */
+  public HttpZipkinTracer() {
+    this(Config.builder().build(), DefaultStatsReceiver$.MODULE$.get().scope("zipkin.http"));
+  }
 
-    public Builder toBuilder() {
-      return new AutoValue_HttpZipkinTracer_Config.Builder(this);
-    }
+  HttpZipkinTracer(Config config, StatsReceiver stats) {
+    this(new HttpSpanConsumer(config.host()), config, stats);
+  }
 
-    abstract String host();
-
-    abstract float initialSampleRate();
-
-    @AutoValue.Builder
-    public interface Builder {
-
-      /** Zipkin server listening on http; also used as the Host header. */
-      Builder host(String host);
-
-      /** How much data to collect. Default sample rate 0.1%. Max is 1, min 0. */
-      Builder initialSampleRate(float initialSampleRate);
-
-      Config build();
-    }
+  private HttpZipkinTracer(HttpSpanConsumer http, Config config, StatsReceiver stats) {
+    super(http, config, stats);
+    this.http = http;
   }
 
   /**
@@ -80,14 +67,41 @@ public final class HttpZipkinTracer extends SamplingTracer {
     return new HttpZipkinTracer(config, stats);
   }
 
-  /**
-   * Default constructor for the service loader
-   */
-  public HttpZipkinTracer() {
-    this(Config.builder().build(), DefaultStatsReceiver$.MODULE$.get().scope("zipkin.http"));
+  @Override public Future<BoxedUnit> close(Time deadline) {
+    return Closables.sequence(http, new AbstractClosable() {
+      @Override public Future<BoxedUnit> close(Time deadline) {
+        return HttpZipkinTracer.super.close(deadline);
+      }
+    }).close(deadline);
   }
 
-  HttpZipkinTracer(Config config, StatsReceiver stats) {
-    super(new HttpRawZipkinTracer(config.host(), stats), config.initialSampleRate());
+  @AutoValue
+  public static abstract class Config implements ZipkinTracer.Config {
+    /**
+     * Creates a builder with the correct defaults derived from {@link HttpZipkinTracerFlags flags}
+     */
+    public static Builder builder() {
+      return new AutoValue_HttpZipkinTracer_Config.Builder()
+          .host(HttpZipkinTracerFlags.host())
+          .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
+    }
+
+    public Builder toBuilder() {
+      return new AutoValue_HttpZipkinTracer_Config.Builder(this);
+    }
+
+    abstract String host();
+
+    @AutoValue.Builder
+    public interface Builder {
+
+      /** Zipkin server listening on http; also used as the Host header. */
+      Builder host(String host);
+
+      /** How much data to collect. Default sample rate 0.1%. Max is 1, min 0. */
+      Builder initialSampleRate(float initialSampleRate);
+
+      Config build();
+    }
   }
 }

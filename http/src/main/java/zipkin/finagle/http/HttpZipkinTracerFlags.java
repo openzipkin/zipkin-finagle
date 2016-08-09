@@ -29,13 +29,13 @@ public final class HttpZipkinTracerFlags {
   public static final class host$ extends GlobalFlag<String> {
     public static final host$ MODULE$ = new host$();
 
-    @Override public String name() {
-      return "zipkin.http.host";
-    }
-
     private host$() {
       super("localhost:9411", "Zipkin server listening on http; also used as the Host header",
           Flaggable$.MODULE$.ofString());
+    }
+
+    @Override public String name() {
+      return "zipkin.http.host";
     }
   }
 
