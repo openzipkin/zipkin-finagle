@@ -25,7 +25,10 @@ import com.twitter.util.AbstractClosable;
 import com.twitter.util.Future;
 import com.twitter.util.Time;
 import com.twitter.util.Try;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
+import java.util.zip.GZIPOutputStream;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
@@ -41,17 +44,16 @@ import zipkin.storage.Callback;
  */
 final class HttpSpanConsumer extends AbstractClosable implements AsyncSpanConsumer {
   final Service<Request, Response> client;
-  final String host;
-  /**
-   * @param host the zipkin host (also used as the http host header).
-   */
-  HttpSpanConsumer(String host) {
+  final HttpZipkinTracer.Config config;
+
+  HttpSpanConsumer(HttpZipkinTracer.Config config) {
+    // Cannot use stack client, as there's no way to disable tracing (ex outgoing trace headers)
     this.client = ClientBuilder.safeBuild(ClientBuilder.get()
         .tracer(new NullTracer())
         .codec(Http.get().enableTracing(false))
-        .hosts(host)
+        .hosts(config.host())
         .hostConnectionLimit(1));
-    this.host = host;
+    this.config = config;
   }
 
   @Override public void accept(final List<Span> spans, final Callback<Void> callback) {
@@ -70,8 +72,20 @@ final class HttpSpanConsumer extends AbstractClosable implements AsyncSpanConsum
   void sendSpans(List<Span> spans, final Callback<Void> callback) {
     byte[] json = Codec.JSON.writeSpans(spans);
     Request request = Request.apply(Methods.POST, "/api/v1/spans");
-    request.headerMap().add("Host", host);
+    request.headerMap().add("Host", config.host());
     request.headerMap().add("Content-Type", "application/json");
+    // Eventhough finagle compression flag exists, it only works for servers!
+    if (config.compressionEnabled()) {
+      request.headerMap().add("Content-Encoding", "gzip");
+      ByteArrayOutputStream gzipped = new ByteArrayOutputStream();
+      try (GZIPOutputStream compressor = new GZIPOutputStream(gzipped)) {
+        compressor.write(json);
+      } catch (IOException e) {
+        callback.onError(e);
+        return;
+      }
+      json = gzipped.toByteArray();
+    }
     request.headerMap().add("Content-Length", String.valueOf(json.length));
     request.write(json);
     client.apply(request).respond(new AbstractFunction1<Try<Response>, BoxedUnit>() {

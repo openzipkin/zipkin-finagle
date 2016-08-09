@@ -21,6 +21,7 @@ import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Duration;
 import java.net.URI;
 import java.util.List;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.Rule;
 import org.junit.Test;
 import scala.Option;
@@ -31,12 +32,13 @@ import zipkin.finagle.http.HttpZipkinTracer.Config;
 import zipkin.junit.ZipkinRule;
 
 import static com.twitter.util.Time.fromMilliseconds;
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.collection.JavaConversions.mapAsJavaMap;
 import static zipkin.finagle.FinagleTestObjects.TODAY;
-import static zipkin.finagle.FinagleTestObjects.seq;
 import static zipkin.finagle.FinagleTestObjects.root;
+import static zipkin.finagle.FinagleTestObjects.seq;
 
 public class HttpZipkinTracerTest extends ZipkinTracerTest {
   final Option<Duration> none = Option.empty(); // avoid having to force generics
@@ -69,5 +71,37 @@ public class HttpZipkinTracerTest extends ZipkinTracerTest {
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
         entry(seq("log_span", "error", "com.twitter.finagle.ChannelWriteException"), 1)
     );
+  }
+
+  @Test public void compression() throws Exception {
+    http.shutdown(); // shutdown the normal zipkin rule
+
+    // create instructions to create a complete RPC span
+    List<Record> records = asList(
+        new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), none),
+        new Record(root, fromMilliseconds(TODAY), new Rpc("get"), none),
+        new Record(root, fromMilliseconds(TODAY), new ClientSend(), none),
+        new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), none)
+    );
+
+    MockWebServer server = new MockWebServer();
+    config = config.toBuilder().host("localhost:" + server.getPort()).build();
+    try {
+      for (boolean compressionEnabled : asList(true, false)) {
+        // recreate the tracer with the compression configuration
+        closeTracer();
+        config = config.toBuilder().compressionEnabled(compressionEnabled).build();
+        createTracer();
+
+        // write a complete span so that it gets reported
+        records.stream().forEach(tracer::record);
+      }
+
+      // we expect the first compressed request to be smaller than the uncompressed one.
+      assertThat(server.takeRequest().getBodySize())
+          .isLessThan(server.takeRequest().getBodySize());
+    } finally {
+      server.shutdown();
+    }
   }
 }
