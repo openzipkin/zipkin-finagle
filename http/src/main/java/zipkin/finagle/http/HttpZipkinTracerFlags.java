@@ -44,5 +44,28 @@ public final class HttpZipkinTracerFlags {
       return host$.MODULE$.getGlobalFlag();
     }
   }
+
+  static boolean compressionEnabled() {
+    return compressionEnabled$.MODULE$.apply();
+  }
+
+  public static final class compressionEnabled$ extends GlobalFlag<Boolean> {
+    public static final compressionEnabled$ MODULE$ = new compressionEnabled$();
+
+    private compressionEnabled$() {
+      super(true, "True implies that spans will be gzipped before transport",
+          Flaggable$.MODULE$.ofJavaBoolean());
+    }
+
+    @Override public String name() {
+      return "zipkin.http.compressionEnabled";
+    }
+  }
+
+  public static final class compressionEnabled {
+    public static Flag<?> getGlobalFlag() {
+      return compressionEnabled$.MODULE$.getGlobalFlag();
+    }
+  }
 }
 

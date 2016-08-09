@@ -78,7 +78,7 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
   }
 
   protected interface Config {
-    /** How much data to collect. Default sample rate 0.1%. Max is 1, min 0. */
+    /** How much data to collect. Default sample rate 0.001 (0.1%). Max is 1, min 0. */
     float initialSampleRate();
   }
 

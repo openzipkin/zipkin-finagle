@@ -127,7 +127,7 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
       /** Sets kafka-topic for zipkin to report to. Default topic zipkin. */
       Builder topic(String topic);
 
-      /** How much data to collect. Default sample rate 0.1%. Max is 1, min 0. */
+      /** @see ZipkinTracer.Config#initialSampleRate() */
       Builder initialSampleRate(float initialSampleRate);
 
       Config build();

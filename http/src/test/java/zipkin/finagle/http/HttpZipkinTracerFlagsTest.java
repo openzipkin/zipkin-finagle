@@ -25,6 +25,8 @@ public class HttpZipkinTracerFlagsTest {
   public void flagNamespace() {
     assertThat(HttpZipkinTracerFlags.host.getGlobalFlag().name())
         .isEqualTo("zipkin.http.host");
+    assertThat(HttpZipkinTracerFlags.compressionEnabled.getGlobalFlag().name())
+        .isEqualTo("zipkin.http.compressionEnabled");
   }
 
   @Test
@@ -32,7 +34,8 @@ public class HttpZipkinTracerFlagsTest {
     assertThat(
         asJavaCollection(GlobalFlag$.MODULE$.getAll(HttpZipkinTracerFlags.class.getClassLoader())))
         .containsOnlyOnce(
-            HttpZipkinTracerFlags.host.getGlobalFlag()
+            HttpZipkinTracerFlags.host.getGlobalFlag(),
+            HttpZipkinTracerFlags.compressionEnabled.getGlobalFlag()
         );
   }
 }

@@ -39,7 +39,7 @@ public final class HttpZipkinTracer extends ZipkinTracer {
   }
 
   HttpZipkinTracer(Config config, StatsReceiver stats) {
-    this(new HttpSpanConsumer(config.host()), config, stats);
+    this(new HttpSpanConsumer(config), config, stats);
   }
 
   private HttpZipkinTracer(HttpSpanConsumer http, Config config, StatsReceiver stats) {
@@ -83,6 +83,7 @@ public final class HttpZipkinTracer extends ZipkinTracer {
     public static Builder builder() {
       return new AutoValue_HttpZipkinTracer_Config.Builder()
           .host(HttpZipkinTracerFlags.host())
+          .compressionEnabled(HttpZipkinTracerFlags.compressionEnabled())
           .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
     }
 
@@ -92,13 +93,18 @@ public final class HttpZipkinTracer extends ZipkinTracer {
 
     abstract String host();
 
+    abstract boolean compressionEnabled();
+
     @AutoValue.Builder
     public interface Builder {
 
       /** Zipkin server listening on http; also used as the Host header. */
       Builder host(String host);
 
-      /** How much data to collect. Default sample rate 0.1%. Max is 1, min 0. */
+      /** True implies that spans will be gzipped before transport. Defaults to true. */
+      Builder compressionEnabled(boolean compressSpans);
+
+      /** @see ZipkinTracer.Config#initialSampleRate() */
       Builder initialSampleRate(float initialSampleRate);
 
       Config build();
