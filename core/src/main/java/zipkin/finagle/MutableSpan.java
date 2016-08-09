@@ -14,7 +14,6 @@
 package zipkin.finagle;
 
 import com.twitter.finagle.service.TimeoutFilter;
-import com.twitter.finagle.thrift.thrift.Constants;
 import com.twitter.finagle.tracing.TraceId;
 import com.twitter.util.Time;
 import java.net.InetSocketAddress;
@@ -25,18 +24,29 @@ import zipkin.BinaryAnnotation;
 import zipkin.Endpoint;
 import zipkin.Span;
 
+import static com.twitter.finagle.thrift.thrift.Constants.CLIENT_RECV;
+import static com.twitter.finagle.thrift.thrift.Constants.SERVER_SEND;
+
 final class MutableSpan {
-  private final TraceId traceId;
+  private final Span.Builder span;
   private final Time started;
   private final List<Annotation> annotations = new ArrayList<>();
   private final List<BinaryAnnotation> binaryAnnotations = new ArrayList<>();
   private boolean isComplete = false;
-  private String name = "Unknown";
   private String service = "Unknown";
   private Endpoint endpoint = Endpoints.UNKNOWN;
 
   MutableSpan(TraceId traceId, Time started) {
-    this.traceId = traceId;
+    this.span = Span.builder();
+    span.id(traceId.spanId().toLong());
+    if (traceId._parentId().isDefined()) {
+      span.parentId(traceId.parentId().toLong());
+    }
+    span.traceId(traceId.traceId().toLong());
+    if (traceId.flags().isDebug()) {
+      span.debug(true);
+    }
+    span.name("unknown");
     this.started = started;
   }
 
@@ -45,7 +55,7 @@ final class MutableSpan {
   }
 
   synchronized MutableSpan setName(String n) {
-    name = n;
+    span.name(n);
     return this;
   }
 
@@ -55,13 +65,20 @@ final class MutableSpan {
   }
 
   synchronized MutableSpan addAnnotation(Time timestamp, String value) {
-    if (!isComplete && (
-        value.equals(Constants.CLIENT_RECV) ||
-            value.equals(Constants.SERVER_SEND) ||
-            value.equals(TimeoutFilter.TimeoutAnnotation())
-    )) {
+    if (annotations.isEmpty()) {
+      span.timestamp(timestamp.inMicroseconds());
+    }
+
+    if (!isComplete &&
+        value.equals(CLIENT_RECV) ||
+        value.equals(SERVER_SEND) ||
+        value.equals(TimeoutFilter.TimeoutAnnotation())) {
+      if (!annotations.isEmpty()) {
+        span.duration(timestamp.inMicroseconds() - annotations.get(0).timestamp);
+      }
       isComplete = true;
     }
+
     annotations.add(Annotation.create(timestamp.inMicroseconds(), value, endpoint));
     return this;
   }
@@ -93,18 +110,6 @@ final class MutableSpan {
   }
 
   synchronized Span toSpan() {
-    Span.Builder span = Span.builder();
-
-    span.id(traceId.spanId().toLong());
-    if (traceId._parentId().isDefined()) {
-      span.parentId(traceId.parentId().toLong());
-    }
-    span.traceId(traceId.traceId().toLong());
-    span.name(name);
-    if (traceId.flags().isDebug()) {
-      span.debug(true);
-    }
-
     // fill in the host/service data for all the annotations
     for (Annotation ann : annotations) {
       Endpoint ep = Endpoints.boundEndpoint(ann.endpoint);
@@ -117,7 +122,6 @@ final class MutableSpan {
       span.addBinaryAnnotation(
           ann.toBuilder().endpoint(ep.toBuilder().serviceName(service).build()).build());
     }
-
     return span.build();
   }
 

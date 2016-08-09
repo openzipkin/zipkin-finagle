@@ -23,11 +23,12 @@ import com.twitter.util.Time;
 import java.net.InetSocketAddress;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import zipkin.Span;
-import zipkin.storage.InMemoryStorage;
 
 import static com.twitter.util.Time.fromMilliseconds;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,18 +46,21 @@ public class SpanRecorderTest {
   MockTimer timer = new MockTimer();
 
   InMemoryStatsReceiver stats = new InMemoryStatsReceiver();
-  InMemoryStorage mem = new InMemoryStorage();
+  BlockingQueue<List<Span>> spansSent = new LinkedBlockingDeque<>();
   SpanRecorder recorder;
 
   @Before
   public void setRecorder() {
     // Recorder schedules a flusher thread on instantiation. Do this in a Before block so
     // that we can control time.
-    recorder = new SpanRecorder(mem.asyncSpanConsumer(), stats, timer);
+    recorder = new SpanRecorder((spans, callback) -> {
+      spansSent.add(spans);
+      callback.onSuccess(null);
+    }, stats, timer);
   }
 
   /** This is replaying actual events that happened with Finagle's tracer */
-  @Test public void examplerootAndChild() {
+  @Test public void examplerootAndChild() throws InterruptedException {
 
     // Initiating a server-span based on an incoming request
     advanceAndRecord(0, root, new Annotation.Rpc("GET"));
@@ -83,17 +87,12 @@ public class SpanRecorderTest {
     // Finishing the server span
     advanceAndRecord(40, root, new Annotation.ServerSend());
 
-    List<Span> trace = mem.spanStore().getTrace(root.traceId().toLong());
-    assertThat(trace.get(0).annotations).extracting(a -> a.value).containsExactly(
-        "sr", "ss"
-    );
-    assertThat(trace.get(1).annotations).extracting(a -> a.value).containsExactly(
+    assertThat(spansSent.take().get(0).annotations).extracting(a -> a.value).containsExactly(
         "cs", "ws", "wr", "cr"
     );
-  }
-
-  private InetSocketAddress socketAddr(String host, int port) {
-    return new InetSocketAddress(host, port);
+    assertThat(spansSent.take().get(0).annotations).extracting(a -> a.value).containsExactly(
+        "sr", "ss"
+    );
   }
 
   @Test public void incrementsCounterWhenUnexpected_binaryAnnotation() throws Exception {
@@ -105,6 +104,11 @@ public class SpanRecorderTest {
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
         entry(seq("record", "unhandled", "java.util.Date"), 1)
     );
+  }
+
+  /** Better to drop instead of crash on expected new Annotation types */
+  class FancyAnnotation implements Annotation {
+
   }
 
   @Test public void incrementsCounterWhenUnexpected_annotation() throws Exception {
@@ -121,30 +125,36 @@ public class SpanRecorderTest {
     advanceAndRecord(0, root, new Annotation.ClientSend());
     advanceAndRecord(1, root, new Annotation.ClientRecv());
 
-    Span span = mem.spanStore().getTrace(root.traceId().toLong()).get(0);
+    Span span = spansSent.take().get(0);
     assertThat(span.annotations).extracting(a -> a.value).containsExactly(
         "cs", "cr"
     );
+    assertThat(span.timestamp).isEqualTo(TODAY * 1000);
+    assertThat(span.duration).isEqualTo(1000);
   }
 
   @Test public void reportsSpanOn_Timeout() throws Exception {
     advanceAndRecord(0, root, new Annotation.ClientSend());
     advanceAndRecord(1, root, new Annotation.Message("finagle.timeout"));
 
-    Span span = mem.spanStore().getTrace(root.traceId().toLong()).get(0);
+    Span span = spansSent.take().get(0);
     assertThat(span.annotations).extracting(a -> a.value).containsExactly(
         "cs", "finagle.timeout"
     );
+    assertThat(span.timestamp).isEqualTo(TODAY * 1000);
+    assertThat(span.duration).isEqualTo(1000);
   }
 
   @Test public void reportsSpanOn_ServerSend() throws Exception {
     advanceAndRecord(0, root, new Annotation.ServerRecv());
     advanceAndRecord(1, root, new Annotation.ServerSend());
 
-    Span span = mem.spanStore().getTrace(root.traceId().toLong()).get(0);
+    Span span = spansSent.take().get(0);
     assertThat(span.annotations).extracting(a -> a.value).containsExactly(
         "sr", "ss"
     );
+    assertThat(span.timestamp).isEqualTo(TODAY * 1000);
+    assertThat(span.duration).isEqualTo(1000);
   }
 
   /** ServiceName can be set late, but it should be consistent across annotations. */
@@ -154,7 +164,7 @@ public class SpanRecorderTest {
     advanceAndRecord(0, root, new Annotation.ServiceName("frontend"));
     advanceAndRecord(15, root, new Annotation.ServerSend());
 
-    Span span = mem.spanStore().getTrace(root.traceId().toLong()).get(0);
+    Span span = spansSent.take().get(0);
     assertThat(span.annotations).extracting(a -> a.endpoint.serviceName).containsExactly(
         "frontend", "frontend"
     );
@@ -169,12 +179,13 @@ public class SpanRecorderTest {
     time.advance(recorder.ttl.plus(Duration.fromMilliseconds(1))); // advance timer
     timer.tick(); // invokes a flush
 
-    Span span = mem.spanStore().getTrace(root.traceId().toLong()).get(0);
+    Span span = spansSent.take().get(0);
     assertThat(span.idString()).isEqualTo(root.toString());
     assertThat(span.name).isEqualTo("get");
     assertThat(span.annotations).extracting(a -> a.value).containsExactly(
         "sr", "finagle.flush"
     );
+    assertThat(span.duration).isNull();
   }
 
   private void advanceAndRecord(int millis, TraceId traceId, Annotation annotation) {
@@ -182,8 +193,7 @@ public class SpanRecorderTest {
     recorder.record(new Record(traceId, Time.now(), annotation, empty()));
   }
 
-  /** Better to drop instead of crash on expected new Annotation types */
-  class FancyAnnotation implements Annotation {
-
+  private InetSocketAddress socketAddr(String host, int port) {
+    return new InetSocketAddress(host, port);
   }
 }
