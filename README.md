@@ -13,22 +13,22 @@ You can also explicitly choose a tracer, which is more reliable, at the tradeoff
 
 Here an example initializing an http client in scala and java
 ```scala
-client = ClientBuilder()
-  .codec(Http().enableTracing(true))
-  .tracer(new HttpZipkinTracer())
-  .name("frontend") // becomes the zipkin service name
-  .hosts("remotehost:8080").build()
+client = Http.client
+             .withTracer(new HttpZipkinTracer())
+             .withLabel("frontend") // becomes the zipkin service name
+             .newService("remotehost:8080");
 ```
 
 ```java
-client = ClientBuilder.safeBuild(ClientBuilder.get()
-  .codec(Http.get().enableTracing(true))
-  .tracer(new HttpZipkinTracer())
-  .name("frontend") // becomes the zipkin service name
-  .hosts("remotehost:8080"));
+client = Http$.MODULE$.client()
+              .withTracer(new HttpZipkinTracer())
+              .withLabel("frontend") // becomes the zipkin service name
+              .newService("remotehost:8080");
 ```
 
 ## Configuration
+
+### Global Flags
 zipkin-finagle configuration is via [global flags](https://github.com/twitter/util/blob/master/util-app/src/main/scala/com/twitter/app/Flag.scala).
 
 Global flags can either be set by system property, or commandline argument (ex if using TwitterServer).
@@ -76,4 +76,21 @@ zipkin.kafka.topic | zipkin | Kafka topic zipkin traces will be sent to
 Ex. Here's how to configure the Kafka server with a system property:
 ```bash
 $ java -Dzipkin.kafka.bootstrapServers=192.168.99.100 ...
+```
+
+### Programmatic
+
+You can also configure zipkin tracers programmatically. Here's an example:
+
+```java
+HttpZipkinTracer.Config config = HttpZipkinTracer.Config.builder()
+    // The frontend makes a sampling decision (via Trace.letTracerAndId) and propagates it downstream.
+    // This property says sample 100% of traces.
+    .initialSampleRate(1.0f)
+    // All servers need to point to the same zipkin transport
+    .host("127.0.0.1:9411").build();
+
+Tracer tracer = HttpZipkinTracer.create(config,
+    // print stats about zipkin to the console
+    new JavaLoggerStatsReceiver(Logger.getAnonymousLogger()));
 ```
