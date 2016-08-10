@@ -15,6 +15,8 @@ package zipkin.finagle.http;
 
 import com.google.auto.service.AutoService;
 import com.google.auto.value.AutoValue;
+import com.twitter.finagle.Name;
+import com.twitter.finagle.Resolver$;
 import com.twitter.finagle.stats.DefaultStatsReceiver$;
 import com.twitter.finagle.stats.NullStatsReceiver;
 import com.twitter.finagle.stats.StatsReceiver;
@@ -50,7 +52,7 @@ public final class HttpZipkinTracer extends ZipkinTracer {
   /**
    * Create a new instance with default configuration.
    *
-   * @param host Zipkin server listening on http; also used as the Host header.
+   * @param host The network location of the Zipkin http service
    * @param stats Gets notified when spans are accepted or dropped. If you are not interested in
    * these events you can use {@linkplain NullStatsReceiver}
    */
@@ -82,6 +84,7 @@ public final class HttpZipkinTracer extends ZipkinTracer {
      */
     public static Builder builder() {
       return new AutoValue_HttpZipkinTracer_Config.Builder()
+          .hostHeader(HttpZipkinTracerFlags.hostHeader())
           .host(HttpZipkinTracerFlags.host())
           .compressionEnabled(HttpZipkinTracerFlags.compressionEnabled())
           .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
@@ -91,23 +94,32 @@ public final class HttpZipkinTracer extends ZipkinTracer {
       return new AutoValue_HttpZipkinTracer_Config.Builder(this);
     }
 
-    abstract String host();
+    abstract Name host();
+
+    abstract String hostHeader();
 
     abstract boolean compressionEnabled();
 
     @AutoValue.Builder
-    public interface Builder {
+    public abstract static class Builder {
+      /** The network location of the Zipkin http service. Defaults to "localhost:9411" */
+      public abstract Builder host(Name host);
 
-      /** Zipkin server listening on http; also used as the Host header. */
-      Builder host(String host);
+      /** Shortcut for a {@link #host(Name)} encoded as a String */
+      public final Builder host(String host) {
+        return host(Resolver$.MODULE$.eval(host));
+      }
+
+      /** The Host header used when sending spans to Zipkin. Defaults to "zipkin" */
+      public abstract Builder hostHeader(String host);
 
       /** True implies that spans will be gzipped before transport. Defaults to true. */
-      Builder compressionEnabled(boolean compressSpans);
+      public abstract Builder compressionEnabled(boolean compressSpans);
 
       /** @see ZipkinTracer.Config#initialSampleRate() */
-      Builder initialSampleRate(float initialSampleRate);
+      public abstract Builder initialSampleRate(float initialSampleRate);
 
-      Config build();
+      public abstract Config build();
     }
   }
 }

@@ -20,8 +20,10 @@ import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Duration;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.Rule;
 import org.junit.Test;
 import scala.Option;
@@ -44,8 +46,8 @@ public class HttpZipkinTracerTest extends ZipkinTracerTest {
   final Option<Duration> none = Option.empty(); // avoid having to force generics
   @Rule
   public ZipkinRule http = new ZipkinRule();
-  Config config = Config.builder().initialSampleRate(1.0f)
-      .host("localhost:" + URI.create(http.httpUrl()).getPort()).build();
+  String host = "localhost:" + URI.create(http.httpUrl()).getPort();
+  Config config = Config.builder().initialSampleRate(1.0f).host(host).build();
 
   @Override protected ZipkinTracer newTracer() {
     return new HttpZipkinTracer(config, stats);
@@ -87,6 +89,7 @@ public class HttpZipkinTracerTest extends ZipkinTracerTest {
     MockWebServer server = new MockWebServer();
     config = config.toBuilder().host("localhost:" + server.getPort()).build();
     try {
+      List<RecordedRequest> requests = new ArrayList<>();
       for (boolean compressionEnabled : asList(true, false)) {
         // recreate the tracer with the compression configuration
         closeTracer();
@@ -95,11 +98,14 @@ public class HttpZipkinTracerTest extends ZipkinTracerTest {
 
         // write a complete span so that it gets reported
         records.stream().forEach(tracer::record);
+
+        // block until the request arrived
+        requests.add(server.takeRequest());
       }
 
       // we expect the first compressed request to be smaller than the uncompressed one.
-      assertThat(server.takeRequest().getBodySize())
-          .isLessThan(server.takeRequest().getBodySize());
+      assertThat(requests.get(0).getBodySize())
+          .isLessThan(requests.get(1).getBodySize());
     } finally {
       server.shutdown();
     }
