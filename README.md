@@ -53,7 +53,8 @@ Here are the flags that apply to Http:
 
 Flag | Default | Description
 --- | --- | ---
-zipkin.http.host | localhost:9411 | Zipkin server listening on http; also used as the Host header
+zipkin.http.host | localhost:9411 | The network location of the Zipkin http service. See http://twitter.github.io/finagle/guide/Names.html
+zipkin.http.hostHeader | zipkin | The Host header used when sending spans to Zipkin
 zipkin.http.compressionEnabled | true | True implies that spans will be gzipped before transport
 
 Ex. Here's how to configure the Zipkin server with a system property:

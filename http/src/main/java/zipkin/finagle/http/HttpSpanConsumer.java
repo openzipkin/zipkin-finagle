@@ -13,9 +13,11 @@
  */
 package zipkin.finagle.http;
 
+import com.twitter.finagle.Http;
+import com.twitter.finagle.Http$;
 import com.twitter.finagle.Service;
-import com.twitter.finagle.builder.ClientBuilder;
-import com.twitter.finagle.http.Http;
+import com.twitter.finagle.ServiceFactory;
+import com.twitter.finagle.Stack;
 import com.twitter.finagle.http.Methods;
 import com.twitter.finagle.http.Request;
 import com.twitter.finagle.http.Response;
@@ -47,12 +49,13 @@ final class HttpSpanConsumer extends AbstractClosable implements AsyncSpanConsum
   final HttpZipkinTracer.Config config;
 
   HttpSpanConsumer(HttpZipkinTracer.Config config) {
-    // Cannot use stack client, as there's no way to disable tracing (ex outgoing trace headers)
-    this.client = ClientBuilder.safeBuild(ClientBuilder.get()
-        .tracer(new NullTracer())
-        .codec(Http.get().enableTracing(false))
-        .hosts(config.host())
-        .hostConnectionLimit(1));
+    // use special knowledge to yank out the trace filter since we are literally sending to zipkin
+    // https://groups.google.com/forum/#!topic/finaglers/LqVVVOr2EMM
+    Stack<ServiceFactory<Request, Response>> stack =
+        Http$.MODULE$.client().stack().remove(new Stack.Role("TraceInitializerFilter"));
+    this.client = new Http.Client(stack, Http.Client$.MODULE$.apply$default$2())
+        .withTracer(new NullTracer())
+        .newService(config.host(), "zipkin-http");
     this.config = config;
   }
 
@@ -72,7 +75,7 @@ final class HttpSpanConsumer extends AbstractClosable implements AsyncSpanConsum
   void sendSpans(List<Span> spans, final Callback<Void> callback) {
     byte[] json = Codec.JSON.writeSpans(spans);
     Request request = Request.apply(Methods.POST, "/api/v1/spans");
-    request.headerMap().add("Host", config.host());
+    request.headerMap().add("Host", config.hostHeader());
     request.headerMap().add("Content-Type", "application/json");
     // Eventhough finagle compression flag exists, it only works for servers!
     if (config.compressionEnabled()) {

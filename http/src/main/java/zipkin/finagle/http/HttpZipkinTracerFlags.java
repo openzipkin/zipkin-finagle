@@ -30,7 +30,8 @@ public final class HttpZipkinTracerFlags {
     public static final host$ MODULE$ = new host$();
 
     private host$() {
-      super("localhost:9411", "Zipkin server listening on http; also used as the Host header",
+      super("localhost:9411",
+          "The network location of the Zipkin http service. See http://twitter.github.io/finagle/guide/Names.html",
           Flaggable$.MODULE$.ofString());
     }
 
@@ -42,6 +43,29 @@ public final class HttpZipkinTracerFlags {
   public static final class host {
     public static Flag<?> getGlobalFlag() {
       return host$.MODULE$.getGlobalFlag();
+    }
+  }
+
+  static String hostHeader() {
+    return hostHeader$.MODULE$.apply();
+  }
+
+  public static final class hostHeader$ extends GlobalFlag<String> {
+    public static final hostHeader$ MODULE$ = new hostHeader$();
+
+    private hostHeader$() {
+      super("zipkin", "The Host header used when sending spans to Zipkin",
+          Flaggable$.MODULE$.ofString());
+    }
+
+    @Override public String name() {
+      return "zipkin.http.hostHeader";
+    }
+  }
+
+  public static final class hostHeader {
+    public static Flag<?> getGlobalFlag() {
+      return hostHeader$.MODULE$.getGlobalFlag();
     }
   }
 
