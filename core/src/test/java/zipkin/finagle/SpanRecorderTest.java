@@ -13,6 +13,7 @@
  */
 package zipkin.finagle;
 
+import com.twitter.finagle.service.TimeoutFilter;
 import com.twitter.finagle.stats.InMemoryStatsReceiver;
 import com.twitter.finagle.tracing.Annotation;
 import com.twitter.finagle.tracing.Record;
@@ -135,7 +136,7 @@ public class SpanRecorderTest {
 
   @Test public void reportsSpanOn_Timeout() throws Exception {
     advanceAndRecord(0, root, new Annotation.ClientSend());
-    advanceAndRecord(1, root, new Annotation.Message("finagle.timeout"));
+    advanceAndRecord(1, root, new Annotation.Message(TimeoutFilter.TimeoutAnnotation()));
 
     Span span = spansSent.take().get(0);
     assertThat(span.annotations).extracting(a -> a.value).containsExactly(
