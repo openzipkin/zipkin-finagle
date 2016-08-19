@@ -20,18 +20,20 @@ import com.twitter.finagle.stats.NullStatsReceiver;
 import com.twitter.finagle.stats.StatsReceiver;
 import com.twitter.util.AbstractClosable;
 import com.twitter.util.Closables;
+import com.twitter.util.ExecutorServiceFuturePool;
 import com.twitter.util.Future;
+import com.twitter.util.FuturePools;
 import com.twitter.util.Time;
-import java.util.Properties;
-import org.apache.kafka.clients.producer.KafkaProducer;
+import java.util.concurrent.Executor;
 import scala.runtime.BoxedUnit;
 import zipkin.finagle.ZipkinTracer;
 import zipkin.finagle.ZipkinTracerFlags;
+import zipkin.reporter.kafka08.KafkaReporter;
 
 @AutoService(com.twitter.finagle.tracing.Tracer.class)
 public final class KafkaZipkinTracer extends ZipkinTracer {
 
-  private final KafkaSpanConsumer kafka;
+  private final KafkaReporter kafka;
 
   /**
    * Default constructor for the service loader
@@ -41,11 +43,13 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
   }
 
   KafkaZipkinTracer(Config config, StatsReceiver stats) {
-    this(new KafkaSpanConsumer(new KafkaProducer<byte[], byte[]>(config.kafkaProperties()),
-        config.topic()), config, stats);
+    this(KafkaReporter.builder(config.bootstrapServers())
+        .topic(config.topic())
+        .executor(config.executor())
+        .build(), config, stats);
   }
 
-  private KafkaZipkinTracer(KafkaSpanConsumer kafka, Config config, StatsReceiver stats) {
+  private KafkaZipkinTracer(KafkaReporter kafka, Config config, StatsReceiver stats) {
     super(kafka, config, stats);
     this.kafka = kafka;
   }
@@ -60,7 +64,8 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
    * these events you can use {@linkplain NullStatsReceiver}
    */
   public static KafkaZipkinTracer create(String bootstrapServers, StatsReceiver stats) {
-    return new KafkaZipkinTracer(Config.builder(bootstrapServers).build(), stats);
+    return new KafkaZipkinTracer(Config.builder().bootstrapServers(bootstrapServers).build(),
+        stats);
   }
 
   /**
@@ -73,11 +78,18 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
   }
 
   @Override public Future<BoxedUnit> close(Time deadline) {
-    return Closables.sequence(kafka, new AbstractClosable() {
-      @Override public Future<BoxedUnit> close(Time deadline) {
-        return KafkaZipkinTracer.super.close(deadline);
-      }
-    }).close(deadline);
+    return Closables.sequence(
+        new AbstractClosable() {
+          @Override public Future<BoxedUnit> close(Time deadline) {
+            kafka.close(); // TODO: blocking
+            return Future.Done();
+          }
+        },
+        new AbstractClosable() {
+          @Override public Future<BoxedUnit> close(Time deadline) {
+            return KafkaZipkinTracer.super.close(deadline);
+          }
+        }).close(deadline);
   }
 
   @AutoValue
@@ -87,48 +99,42 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
      * flags}
      */
     public static Builder builder() {
-      return builder(KafkaZipkinTracerFlags.bootstrapServers());
-    }
-
-    /**
-     * Creates a builder with the correct defaults derived from {@link KafkaZipkinTracerFlags
-     * flags}
-     *
-     * @param bootstrapServers overrides {@link KafkaZipkinTracerFlags#bootstrapServers()}
-     */
-    public static Builder builder(String bootstrapServers) {
-      Properties props = new Properties();
-      props.put("bootstrap.servers", bootstrapServers);
-      props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-      props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
       return new AutoValue_KafkaZipkinTracer_Config.Builder()
-          .kafkaProperties(props)
+          .bootstrapServers(KafkaZipkinTracerFlags.bootstrapServers())
           .topic(KafkaZipkinTracerFlags.topic())
-          .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
+          .initialSampleRate(ZipkinTracerFlags.initialSampleRate())
+          .executor(((ExecutorServiceFuturePool) FuturePools.unboundedPool()).executor());
     }
 
     public Builder toBuilder() {
       return new AutoValue_KafkaZipkinTracer_Config.Builder(this);
     }
 
-    abstract Properties kafkaProperties();
+    abstract String bootstrapServers();
 
     abstract String topic();
+
+    abstract Executor executor();
 
     @AutoValue.Builder
     public interface Builder {
       /**
-       * Configuration for Kafka producer. Essential configuration properties are:
-       * bootstrap.servers, key.serializer, value.serializer. For a full list of config options, see
-       * http://kafka.apache.org/082/documentation.html#producerconfigs
+       * Initial set of kafka servers to connect to, rest of cluster will be discovered (comma
+       * separated). Default localhost:9092
        */
-      Builder kafkaProperties(Properties kafkaProperties);
+      Builder bootstrapServers(String bootstrapServers);
 
       /** Sets kafka-topic for zipkin to report to. Default topic zipkin. */
       Builder topic(String topic);
 
       /** @see ZipkinTracer.Config#initialSampleRate() */
       Builder initialSampleRate(float initialSampleRate);
+
+      /**
+       * Sets the executor used to defer commands. This is used as some kafka operations are
+       * blocking. Default {@link FuturePools#unboundedPool}
+       */
+      Builder executor(Executor executor);
 
       Config build();
     }

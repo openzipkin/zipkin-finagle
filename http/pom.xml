@@ -32,11 +32,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zipkin.java</groupId>
-      <artifactId>zipkin</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-finagle_${scala.binary.version}</artifactId>
     </dependency>

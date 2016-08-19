@@ -36,9 +36,8 @@ import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 import zipkin.BinaryAnnotation;
 import zipkin.Span;
-import zipkin.internal.Nullable;
-import zipkin.storage.AsyncSpanConsumer;
-import zipkin.storage.Callback;
+import zipkin.reporter.Reporter;
+import zipkin.reporter.Reporter.Callback;
 
 final class SpanRecorder extends AbstractClosable {
   private static final byte[] TRUE = {1};
@@ -47,21 +46,21 @@ final class SpanRecorder extends AbstractClosable {
   final Duration ttl = Duration.fromSeconds(120);
   private final ConcurrentHashMap<TraceId, MutableSpan> spanMap = new ConcurrentHashMap(64);
   private final TimerTask flusher;
-  private final AsyncSpanConsumer reporter;
+  private final Reporter reporter;
   /**
    * Incrementing a counter instead of throwing allows finagle to add new event types ahead of
    * upgrading the zipkin tracer
    */
   private final StatsReceiver unhandledReceiver;
-  private final Callback<Void> callback;
+  private final Callback callback;
 
-  SpanRecorder(AsyncSpanConsumer reporter, StatsReceiver stats, Timer timer) {
+  SpanRecorder(Reporter reporter, StatsReceiver stats, Timer timer) {
     this.reporter = reporter;
     this.unhandledReceiver = stats.scope("record").scope("unhandled");
     final Counter okCounter = stats.scope("log_span").counter0("ok");
     final StatsReceiver errorReceiver = stats.scope("log_span").scope("error");
-    this.callback = new Callback<Void>() {
-      @Override public void onSuccess(@Nullable Void value) {
+    this.callback = new Callback() {
+      @Override public void onComplete() {
         okCounter.incr();
       }
 
@@ -94,7 +93,7 @@ final class SpanRecorder extends AbstractClosable {
 
     if (span.isComplete()) {
       spanMap.remove(record.traceId(), span);
-      reporter.accept(Collections.singletonList(span.toSpan()), callback);
+      reporter.report(Collections.singletonList(span.toSpan()), callback);
     }
   }
 
@@ -205,7 +204,7 @@ final class SpanRecorder extends AbstractClosable {
       }
     }
     if (!spans.isEmpty()) {
-      reporter.accept(spans, callback);
+      reporter.report(spans, callback);
     }
   }
 
