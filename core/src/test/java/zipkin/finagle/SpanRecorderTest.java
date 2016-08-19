@@ -56,7 +56,7 @@ public class SpanRecorderTest {
     // that we can control time.
     recorder = new SpanRecorder((spans, callback) -> {
       spansSent.add(spans);
-      callback.onSuccess(null);
+      callback.onComplete();
     }, stats, timer);
   }
 

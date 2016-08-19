@@ -30,13 +30,6 @@
     <main.basedir>${project.basedir}/..</main.basedir>
   </properties>
 
-  <dependencies>
-    <dependency>
-      <groupId>io.zipkin.java</groupId>
-      <artifactId>zipkin</artifactId>
-    </dependency>
-  </dependencies>
-
   <build>
     <plugins>
       <plugin>

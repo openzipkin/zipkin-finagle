@@ -36,19 +36,18 @@ import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
 import zipkin.Codec;
 import zipkin.Span;
-import zipkin.storage.AsyncSpanConsumer;
-import zipkin.storage.Callback;
+import zipkin.reporter.Reporter;
 
 /**
  * Receives the Finagle generated traces and sends them off to Zipkin via Http.
  *
  * <p>This uses json format, as it is more often used and easier for people to debug.
  */
-final class HttpSpanConsumer extends AbstractClosable implements AsyncSpanConsumer {
+final class HttpReporter extends AbstractClosable implements Reporter {
   final Service<Request, Response> client;
   final HttpZipkinTracer.Config config;
 
-  HttpSpanConsumer(HttpZipkinTracer.Config config) {
+  HttpReporter(HttpZipkinTracer.Config config) {
     // use special knowledge to yank out the trace filter since we are literally sending to zipkin
     // https://groups.google.com/forum/#!topic/finaglers/LqVVVOr2EMM
     Stack<ServiceFactory<Request, Response>> stack =
@@ -59,7 +58,7 @@ final class HttpSpanConsumer extends AbstractClosable implements AsyncSpanConsum
     this.config = config;
   }
 
-  @Override public void accept(final List<Span> spans, final Callback<Void> callback) {
+  @Override public void report(final List<Span> spans, final Callback callback) {
     Trace.letClear(new AbstractFunction0<Void>() {
       @Override public Void apply() {
         try {
@@ -72,7 +71,7 @@ final class HttpSpanConsumer extends AbstractClosable implements AsyncSpanConsum
     });
   }
 
-  void sendSpans(List<Span> spans, final Callback<Void> callback) {
+  void sendSpans(List<Span> spans, final Callback callback) {
     byte[] json = Codec.JSON.writeSpans(spans);
     Request request = Request.apply(Methods.POST, "/api/v1/spans");
     request.headerMap().add("Host", config.hostHeader());
@@ -94,7 +93,7 @@ final class HttpSpanConsumer extends AbstractClosable implements AsyncSpanConsum
     client.apply(request).respond(new AbstractFunction1<Try<Response>, BoxedUnit>() {
       @Override public BoxedUnit apply(Try<Response> result) {
         if (result.isReturn()) {
-          callback.onSuccess(null);
+          callback.onComplete();
         } else {
           callback.onError(result.throwable());
         }

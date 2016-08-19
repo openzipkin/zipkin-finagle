@@ -27,7 +27,7 @@ import scala.Option;
 import scala.Some;
 import scala.runtime.BoxedUnit;
 import scala.runtime.BoxesRunTime;
-import zipkin.storage.AsyncSpanConsumer;
+import zipkin.reporter.Reporter;
 
 /**
  * Receives the Finagle generated traces and sends them off to Zipkin.
@@ -47,7 +47,7 @@ import zipkin.storage.AsyncSpanConsumer;
  *   }
  *
  *   HttpZipkinTracer(Config config, StatsReceiver stats) {
- *     super(new HttpSpanConsumer(config.host()), stats, config.initialSampleRate());
+ *     super(new HttpReporter(config.host()), stats, config.initialSampleRate());
  *   }
  * }</pre>
  */
@@ -56,7 +56,7 @@ import zipkin.storage.AsyncSpanConsumer;
 public class ZipkinTracer extends SamplingTracer implements Closable {
   private final RawZipkinTracer underlying;
 
-  protected ZipkinTracer(AsyncSpanConsumer reporter, Config config, StatsReceiver stats) {
+  protected ZipkinTracer(Reporter reporter, Config config, StatsReceiver stats) {
     this(new RawZipkinTracer(reporter, stats), config);
   }
 
@@ -88,7 +88,7 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     /**
      * @param stats We generate stats to keep track of traces sent, failures and so on
      */
-    RawZipkinTracer(AsyncSpanConsumer reporter, StatsReceiver stats) {
+    RawZipkinTracer(Reporter reporter, StatsReceiver stats) {
       this.recorder = new SpanRecorder(reporter, stats, DefaultTimer$.MODULE$.twitter());
     }
 

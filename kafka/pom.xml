@@ -32,34 +32,21 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zipkin.java</groupId>
-      <artifactId>zipkin</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka_${scala.binary.version}</artifactId>
-      <!-- This is pinned to Kafka 0.8.x client as 0.9.x brokers work with them, but not visa-versa
-     http://docs.confluent.io/2.0.0/upgrade.html -->
-      <version>0.8.2.2</version>
-      <!-- don't eagerly bind slf4j -->
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-finagle_${scala.binary.version}</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zipkin.reporter</groupId>
+      <artifactId>zipkin-reporter-kafka08</artifactId>
+      <version>${zipkin-reporter.version}</version>
     </dependency>
 
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-finagle_${scala.binary.version}</artifactId>
       <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

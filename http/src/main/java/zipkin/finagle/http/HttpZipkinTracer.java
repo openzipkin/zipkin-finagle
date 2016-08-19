@@ -31,7 +31,7 @@ import zipkin.finagle.ZipkinTracerFlags;
 
 @AutoService(Tracer.class)
 public final class HttpZipkinTracer extends ZipkinTracer {
-  private final HttpSpanConsumer http;
+  private final HttpReporter http;
 
   /**
    * Default constructor for the service loader
@@ -41,10 +41,10 @@ public final class HttpZipkinTracer extends ZipkinTracer {
   }
 
   HttpZipkinTracer(Config config, StatsReceiver stats) {
-    this(new HttpSpanConsumer(config), config, stats);
+    this(new HttpReporter(config), config, stats);
   }
 
-  private HttpZipkinTracer(HttpSpanConsumer http, Config config, StatsReceiver stats) {
+  private HttpZipkinTracer(HttpReporter http, Config config, StatsReceiver stats) {
     super(http, config, stats);
     this.http = http;
   }
