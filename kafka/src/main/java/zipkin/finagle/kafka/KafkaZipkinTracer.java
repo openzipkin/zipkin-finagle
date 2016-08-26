@@ -20,20 +20,17 @@ import com.twitter.finagle.stats.NullStatsReceiver;
 import com.twitter.finagle.stats.StatsReceiver;
 import com.twitter.util.AbstractClosable;
 import com.twitter.util.Closables;
-import com.twitter.util.ExecutorServiceFuturePool;
 import com.twitter.util.Future;
-import com.twitter.util.FuturePools;
 import com.twitter.util.Time;
-import java.util.concurrent.Executor;
 import scala.runtime.BoxedUnit;
 import zipkin.finagle.ZipkinTracer;
 import zipkin.finagle.ZipkinTracerFlags;
-import zipkin.reporter.kafka08.KafkaReporter;
+import zipkin.reporter.kafka08.KafkaSender;
 
 @AutoService(com.twitter.finagle.tracing.Tracer.class)
 public final class KafkaZipkinTracer extends ZipkinTracer {
 
-  private final KafkaReporter kafka;
+  private final KafkaSender kafka;
 
   /**
    * Default constructor for the service loader
@@ -43,13 +40,13 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
   }
 
   KafkaZipkinTracer(Config config, StatsReceiver stats) {
-    this(KafkaReporter.builder(config.bootstrapServers())
+    this(KafkaSender.builder()
+        .bootstrapServers(config.bootstrapServers())
         .topic(config.topic())
-        .executor(config.executor())
         .build(), config, stats);
   }
 
-  private KafkaZipkinTracer(KafkaReporter kafka, Config config, StatsReceiver stats) {
+  private KafkaZipkinTracer(KafkaSender kafka, Config config, StatsReceiver stats) {
     super(kafka, config, stats);
     this.kafka = kafka;
   }
@@ -102,8 +99,7 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
       return new AutoValue_KafkaZipkinTracer_Config.Builder()
           .bootstrapServers(KafkaZipkinTracerFlags.bootstrapServers())
           .topic(KafkaZipkinTracerFlags.topic())
-          .initialSampleRate(ZipkinTracerFlags.initialSampleRate())
-          .executor(((ExecutorServiceFuturePool) FuturePools.unboundedPool()).executor());
+          .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
     }
 
     public Builder toBuilder() {
@@ -113,8 +109,6 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
     abstract String bootstrapServers();
 
     abstract String topic();
-
-    abstract Executor executor();
 
     @AutoValue.Builder
     public interface Builder {
@@ -129,12 +123,6 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
 
       /** @see ZipkinTracer.Config#initialSampleRate() */
       Builder initialSampleRate(float initialSampleRate);
-
-      /**
-       * Sets the executor used to defer commands. This is used as some kafka operations are
-       * blocking. Default {@link FuturePools#unboundedPool}
-       */
-      Builder executor(Executor executor);
 
       Config build();
     }

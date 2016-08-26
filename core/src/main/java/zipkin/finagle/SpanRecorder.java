@@ -36,8 +36,11 @@ import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 import zipkin.BinaryAnnotation;
 import zipkin.Span;
-import zipkin.reporter.Reporter;
-import zipkin.reporter.Reporter.Callback;
+import zipkin.reporter.Callback;
+import zipkin.reporter.Encoder;
+import zipkin.reporter.Sender;
+
+import static zipkin.internal.Util.checkArgument;
 
 final class SpanRecorder extends AbstractClosable {
   private static final byte[] TRUE = {1};
@@ -45,8 +48,9 @@ final class SpanRecorder extends AbstractClosable {
   private static final String ERROR_FORMAT = "%s: %s"; // annotation: errorMessage
   final Duration ttl = Duration.fromSeconds(120);
   private final ConcurrentHashMap<TraceId, MutableSpan> spanMap = new ConcurrentHashMap(64);
+  private final Encoder<Span> encoder = Encoder.THRIFT;
   private final TimerTask flusher;
-  private final Reporter reporter;
+  private final Sender sender;
   /**
    * Incrementing a counter instead of throwing allows finagle to add new event types ahead of
    * upgrading the zipkin tracer
@@ -54,8 +58,10 @@ final class SpanRecorder extends AbstractClosable {
   private final StatsReceiver unhandledReceiver;
   private final Callback callback;
 
-  SpanRecorder(Reporter reporter, StatsReceiver stats, Timer timer) {
-    this.reporter = reporter;
+  SpanRecorder(Sender sender, StatsReceiver stats, Timer timer) {
+    this.sender = sender;
+    checkArgument(sender.encoding() == encoder.encoding(),
+        "Unsupported encoding: " + sender.encoding());
     this.unhandledReceiver = stats.scope("record").scope("unhandled");
     final Counter okCounter = stats.scope("log_span").counter0("ok");
     final StatsReceiver errorReceiver = stats.scope("log_span").scope("error");
@@ -93,7 +99,8 @@ final class SpanRecorder extends AbstractClosable {
 
     if (span.isComplete()) {
       spanMap.remove(record.traceId(), span);
-      reporter.report(Collections.singletonList(span.toSpan()), callback);
+      // TODO: guard size
+      sender.sendSpans(Collections.singletonList(encoder.encode(span.toSpan())), callback);
     }
   }
 
@@ -194,17 +201,18 @@ final class SpanRecorder extends AbstractClosable {
 
   /** This sends off spans after the deadline is hit, no matter if it ended naturally or not. */
   void flush(Time deadline) {
-    List<Span> spans = new ArrayList<>(spanMap.size());
+    List<byte[]> spans = new ArrayList<>(spanMap.size());
     for (Iterator<MutableSpan> i = spanMap.values().iterator(); i.hasNext(); ) {
       MutableSpan span = i.next();
       if (span.started().$less$eq(deadline)) {
         i.remove();
         span.addAnnotation(deadline, "finagle.flush");
-        spans.add(span.toSpan());
+        // TODO: guard size
+        spans.add(encoder.encode(span.toSpan()));
       }
     }
     if (!spans.isEmpty()) {
-      reporter.report(spans, callback);
+      sender.sendSpans(spans, callback);
     }
   }
 

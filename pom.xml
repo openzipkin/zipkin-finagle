@@ -44,9 +44,8 @@
 
     <!-- version numbers that are used more than once -->
     <scala.binary.version>2.11</scala.binary.version>
-    <finagle.version>6.36.0</finagle.version>
-    <zipkin-reporter.version>0.2.0</zipkin-reporter.version>
-    <zipkin.version>1.7.0</zipkin.version>
+    <finagle.version>6.38.0</finagle.version>
+    <zipkin-reporter.version>0.4.3</zipkin-reporter.version>
     <license-maven-plugin.version>2.11</license-maven-plugin.version>
   </properties>
 
@@ -128,12 +127,6 @@
           <artifactId>libthrift</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zipkin.java</groupId>
-      <artifactId>zipkin</artifactId>
-      <version>${zipkin.version}</version>
     </dependency>
 
     <dependency>
