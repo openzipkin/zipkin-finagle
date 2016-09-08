@@ -20,7 +20,7 @@
   <parent>
     <groupId>io.zipkin.finagle</groupId>
     <artifactId>zipkin-finagle-parent_2.11</artifactId>
-    <version>0.2.1-SNAPSHOT</version>
+    <version>0.2.1</version>
   </parent>
 
   <artifactId>zipkin-finagle-kafka_2.11</artifactId>
