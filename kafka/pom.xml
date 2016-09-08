@@ -38,7 +38,7 @@
 
     <dependency>
       <groupId>io.zipkin.reporter</groupId>
-      <artifactId>zipkin-reporter-kafka08</artifactId>
+      <artifactId>zipkin-sender-kafka08</artifactId>
       <version>${zipkin-reporter.version}</version>
     </dependency>
 

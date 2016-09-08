@@ -51,7 +51,7 @@
     <dependency>
       <groupId>io.zipkin.java</groupId>
       <artifactId>zipkin-junit</artifactId>
-      <version>${zipkin.version}</version>
+      <version>1.8.4</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

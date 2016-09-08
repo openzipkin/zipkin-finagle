@@ -31,7 +31,7 @@ import zipkin.finagle.ZipkinTracerFlags;
 
 @AutoService(Tracer.class)
 public final class HttpZipkinTracer extends ZipkinTracer {
-  private final HttpReporter http;
+  private final HttpSender http;
 
   /**
    * Default constructor for the service loader
@@ -41,10 +41,10 @@ public final class HttpZipkinTracer extends ZipkinTracer {
   }
 
   HttpZipkinTracer(Config config, StatsReceiver stats) {
-    this(new HttpReporter(config), config, stats);
+    this(new HttpSender(config), config, stats);
   }
 
-  private HttpZipkinTracer(HttpReporter http, Config config, StatsReceiver stats) {
+  private HttpZipkinTracer(HttpSender http, Config config, StatsReceiver stats) {
     super(http, config, stats);
     this.http = http;
   }
@@ -70,7 +70,7 @@ public final class HttpZipkinTracer extends ZipkinTracer {
   }
 
   @Override public Future<BoxedUnit> close(Time deadline) {
-    return Closables.sequence(http, new AbstractClosable() {
+    return Closables.sequence(http.client, new AbstractClosable() {
       @Override public Future<BoxedUnit> close(Time deadline) {
         return HttpZipkinTracer.super.close(deadline);
       }

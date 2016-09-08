@@ -54,10 +54,8 @@ public class SpanRecorderTest {
   public void setRecorder() {
     // Recorder schedules a flusher thread on instantiation. Do this in a Before block so
     // that we can control time.
-    recorder = new SpanRecorder((spans, callback) -> {
-      spansSent.add(spans);
-      callback.onComplete();
-    }, stats, timer);
+    recorder = new SpanRecorder(FakeSender.create()
+        .onSpans(spans -> spansSent.add(spans)), stats, timer);
   }
 
   /** This is replaying actual events that happened with Finagle's tracer */
