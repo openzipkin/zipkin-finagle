@@ -29,7 +29,7 @@ import org.junit.Test;
 import scala.Option;
 import zipkin.Span;
 import zipkin.finagle.ZipkinTracer;
-import zipkin.finagle.ZipkinTracerTest;
+import zipkin.finagle.ZipkinTracerIntegrationTest;
 import zipkin.finagle.http.HttpZipkinTracer.Config;
 import zipkin.junit.ZipkinRule;
 
@@ -42,7 +42,7 @@ import static zipkin.finagle.FinagleTestObjects.TODAY;
 import static zipkin.finagle.FinagleTestObjects.root;
 import static zipkin.finagle.FinagleTestObjects.seq;
 
-public class HttpZipkinTracerTest extends ZipkinTracerTest {
+public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest {
   final Option<Duration> none = Option.empty(); // avoid having to force generics
   @Rule
   public ZipkinRule http = new ZipkinRule();
@@ -68,10 +68,18 @@ public class HttpZipkinTracerTest extends ZipkinTracerTest {
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), none));
     tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), none));
 
-    Thread.sleep(500); // wait for http request attempt to go through
+    Thread.sleep(1500); // wait for http request attempt to go through
 
-    assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(seq("log_span", "error", "com.twitter.finagle.ChannelWriteException"), 1)
+    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
+        entry(seq("spans"), 1),
+        entry(seq("span_bytes"), 165),
+        entry(seq("spans_dropped"), 1),
+        entry(seq("messages"), 1),
+        entry(seq("message_bytes"), 170),
+        entry(seq("messages_dropped"), 1),
+        entry(seq("messages_dropped", "com.twitter.finagle.ChannelWriteException"), 1),
+        entry(seq("messages_dropped", "com.twitter.finagle.ChannelWriteException",
+            "java.net.ConnectException"), 1)
     );
   }
 

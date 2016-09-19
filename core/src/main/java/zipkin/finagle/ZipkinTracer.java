@@ -27,6 +27,8 @@ import scala.Option;
 import scala.Some;
 import scala.runtime.BoxedUnit;
 import scala.runtime.BoxesRunTime;
+import zipkin.Span;
+import zipkin.reporter.AsyncReporter;
 import zipkin.reporter.Sender;
 
 /**
@@ -54,14 +56,22 @@ import zipkin.reporter.Sender;
 // It would be cleaner to obviate SamplingTracer and the dependency on finagle-zipkin-core, but
 // SamplingTracer includes unrelated event logic https://github.com/twitter/finagle/issues/540
 public class ZipkinTracer extends SamplingTracer implements Closable {
-  private final RawZipkinTracer underlying;
+  final AsyncReporter<Span> reporter;
+  final RawZipkinTracer underlying;
 
   protected ZipkinTracer(Sender sender, Config config, StatsReceiver stats) {
-    this(new RawZipkinTracer(sender, stats), config);
+    this(AsyncReporter.builder(sender)
+        .metrics(new ReporterMetricsAdapter(stats))
+        .build(), config, stats);
   }
 
-  private ZipkinTracer(RawZipkinTracer underlying, Config config) {
+  ZipkinTracer(AsyncReporter<Span> reporter, Config config, StatsReceiver stats) {
+    this(reporter, new RawZipkinTracer(reporter, stats), config);
+  }
+
+  private ZipkinTracer(AsyncReporter<Span> reporter, RawZipkinTracer underlying, Config config) {
     super(underlying, config.initialSampleRate());
+    this.reporter = reporter;
     this.underlying = underlying;
   }
 
@@ -70,6 +80,7 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
   }
 
   @Override public Future<BoxedUnit> close(Time deadline) {
+    reporter.close();
     return underlying.recorder.close(deadline);
   }
 
@@ -88,8 +99,8 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     /**
      * @param stats We generate stats to keep track of traces sent, failures and so on
      */
-    RawZipkinTracer(Sender sender, StatsReceiver stats) {
-      this.recorder = new SpanRecorder(sender, stats, DefaultTimer$.MODULE$.twitter());
+    RawZipkinTracer(AsyncReporter<Span> reporter, StatsReceiver stats) {
+      this.recorder = new SpanRecorder(reporter, stats, DefaultTimer$.MODULE$.twitter());
     }
 
     @Override

@@ -13,7 +13,6 @@
  */
 package zipkin.finagle;
 
-import com.twitter.finagle.stats.Counter;
 import com.twitter.finagle.stats.StatsReceiver;
 import com.twitter.finagle.tracing.Annotation;
 import com.twitter.finagle.tracing.Record;
@@ -27,20 +26,15 @@ import com.twitter.util.Timer;
 import com.twitter.util.TimerTask;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 import zipkin.BinaryAnnotation;
 import zipkin.Span;
-import zipkin.reporter.Callback;
-import zipkin.reporter.Encoder;
+import zipkin.reporter.AsyncReporter;
+import zipkin.reporter.Reporter;
 import zipkin.reporter.Sender;
-
-import static zipkin.internal.Util.checkArgument;
 
 final class SpanRecorder extends AbstractClosable {
   private static final byte[] TRUE = {1};
@@ -48,32 +42,17 @@ final class SpanRecorder extends AbstractClosable {
   private static final String ERROR_FORMAT = "%s: %s"; // annotation: errorMessage
   final Duration ttl = Duration.fromSeconds(120);
   private final ConcurrentHashMap<TraceId, MutableSpan> spanMap = new ConcurrentHashMap(64);
-  private final Encoder<Span> encoder = Encoder.THRIFT;
-  private final TimerTask flusher;
-  private final Sender sender;
+  private final Reporter<Span> reporter;
   /**
    * Incrementing a counter instead of throwing allows finagle to add new event types ahead of
    * upgrading the zipkin tracer
    */
   private final StatsReceiver unhandledReceiver;
-  private final Callback callback;
+  private final TimerTask flusher;
 
-  SpanRecorder(Sender sender, StatsReceiver stats, Timer timer) {
-    this.sender = sender;
-    checkArgument(sender.encoding() == encoder.encoding(),
-        "Unsupported encoding: " + sender.encoding());
+  SpanRecorder(Reporter<Span> reporter, StatsReceiver stats, Timer timer) {
+    this.reporter = reporter;
     this.unhandledReceiver = stats.scope("record").scope("unhandled");
-    final Counter okCounter = stats.scope("log_span").counter0("ok");
-    final StatsReceiver errorReceiver = stats.scope("log_span").scope("error");
-    this.callback = new Callback() {
-      @Override public void onComplete() {
-        okCounter.incr();
-      }
-
-      @Override public void onError(Throwable t) {
-        errorReceiver.counter0(t.getClass().getName()).incr();
-      }
-    };
     this.flusher = timer.schedule(ttl.$div(2L), new AbstractFunction0() {
       @Override
       public Void apply() {
@@ -99,8 +78,7 @@ final class SpanRecorder extends AbstractClosable {
 
     if (span.isComplete()) {
       spanMap.remove(record.traceId(), span);
-      // TODO: guard size
-      sender.sendSpans(Collections.singletonList(encoder.encode(span.toSpan())), callback);
+      reporter.report(span.toSpan());
     }
   }
 
@@ -201,18 +179,13 @@ final class SpanRecorder extends AbstractClosable {
 
   /** This sends off spans after the deadline is hit, no matter if it ended naturally or not. */
   void flush(Time deadline) {
-    List<byte[]> spans = new ArrayList<>(spanMap.size());
     for (Iterator<MutableSpan> i = spanMap.values().iterator(); i.hasNext(); ) {
       MutableSpan span = i.next();
       if (span.started().$less$eq(deadline)) {
         i.remove();
         span.addAnnotation(deadline, "finagle.flush");
-        // TODO: guard size
-        spans.add(encoder.encode(span.toSpan()));
+        reporter.report(span.toSpan());
       }
-    }
-    if (!spans.isEmpty()) {
-      sender.sendSpans(spans, callback);
     }
   }
 
