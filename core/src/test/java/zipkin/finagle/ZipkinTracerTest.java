@@ -19,14 +19,17 @@ import com.twitter.finagle.tracing.Annotation.ClientSend;
 import com.twitter.finagle.tracing.Annotation.Rpc;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
-import com.twitter.util.Await;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import zipkin.Span;
+import zipkin.reporter.AsyncReporter;
+import zipkin.reporter.Sender;
 
 import static com.twitter.util.Time.fromMilliseconds;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,48 +37,52 @@ import static org.assertj.core.api.Assertions.entry;
 import static scala.Option.empty;
 import static scala.collection.JavaConversions.mapAsJavaMap;
 import static zipkin.finagle.FinagleTestObjects.TODAY;
-import static zipkin.finagle.FinagleTestObjects.seq;
 import static zipkin.finagle.FinagleTestObjects.root;
+import static zipkin.finagle.FinagleTestObjects.seq;
 
-public abstract class ZipkinTracerTest {
+public class ZipkinTracerTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
-  protected InMemoryStatsReceiver stats = new InMemoryStatsReceiver();
-  protected ZipkinTracer tracer;
+
+  InMemoryStatsReceiver stats = new InMemoryStatsReceiver();
+  BlockingQueue<List<Span>> spansSent = new LinkedBlockingDeque<>();
+
+  ZipkinTracer tracer = newTracer(FakeSender.create().onSpans(span -> spansSent.add(span)));
+
+  ZipkinTracer newTracer(Sender sender) {
+    return new ZipkinTracer(AsyncReporter.builder(sender)
+        .messageTimeout(0, TimeUnit.MILLISECONDS)
+        .messageMaxBytes(170) // size of a simple span
+        .metrics(new ReporterMetricsAdapter(stats))
+        .build(), () -> 1.0f, stats);
+  }
 
   @After
   public void closeTracer() throws Exception {
-    Await.result(tracer.close());
+    tracer.close();
   }
 
-  @Before
-  public void createTracer() {
-    tracer = newTracer();
-  }
-
-  protected abstract ZipkinTracer newTracer();
-
-  protected abstract List<List<Span>> getTraces() throws Exception;
-
-  @Test public void unfinishedSpansArentImplicitlyFlushed() throws Exception {
+  @Test public void unfinishedSpansArentImplicitlyReported() throws Exception {
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), empty()));
 
-    assertThat(getTraces()).isEmpty();
+    tracer.reporter.flush();
+
+    assertThat(spansSent.take()).isEmpty();
   }
 
-  @Test public void finishedSpansAreImplicitlyFlushed() throws Exception {
+  @Test public void finishedSpansAreImplicitlyReported() throws Exception {
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), empty()));
 
-    // client receive flushes the span
+    // client receive reports the span
     tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
 
-    Thread.sleep(1000); // the flush is usually in the background, so no future to block on.
+    tracer.reporter.flush();
 
-    assertThat(getTraces().stream().flatMap(List::stream))
+    assertThat(spansSent.take().stream())
         .flatExtracting(s -> s.annotations)
         .extracting(a -> a.value)
         .containsExactly("cs", "cr");
@@ -88,10 +95,39 @@ public abstract class ZipkinTracerTest {
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), empty()));
     tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
 
-    Thread.sleep(1000); // the flush is usually in the background, so no future to block on.
+    tracer.reporter.flush();
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(seq("log_span", "ok"), 1)
+        entry(seq("span_bytes"), 165),
+        entry(seq("spans"), 1),
+        entry(seq("message_bytes"), 170),
+        entry(seq("messages"), 1)
+    );
+  }
+
+  @Test
+  public void incrementsDropMetricsOnSendError() throws Exception {
+    tracer.close();
+    tracer = newTracer(FakeSender.create().onSpans(span -> {
+      throw new IllegalStateException(new NullPointerException());
+    }));
+
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+
+    tracer.reporter.flush();
+
+    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
+        entry(seq("spans"), 1),
+        entry(seq("span_bytes"), 165),
+        entry(seq("spans_dropped"), 1),
+        entry(seq("messages"), 1),
+        entry(seq("message_bytes"), 170),
+        entry(seq("messages_dropped"), 1),
+        entry(seq("messages_dropped", "java.lang.IllegalStateException"), 1),
+        entry(seq("messages_dropped", "java.lang.IllegalStateException", "java.lang.NullPointerException"), 1)
     );
   }
 }

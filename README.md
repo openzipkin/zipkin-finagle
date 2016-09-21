@@ -94,3 +94,20 @@ Tracer tracer = HttpZipkinTracer.create(config,
     // print stats about zipkin to the console
     new JavaLoggerStatsReceiver(Logger.getAnonymousLogger()));
 ```
+
+## Metrics
+
+The following metrics are reported under a transport-specific category
+to the configured `StatsReceiver`. For example, if using kafka, they are
+reported relative to "zipkin.kafka".
+
+Metric | Description
+--- | ---
+spans | the count of spans recorded by the tracer
+span_bytes | the count of encoded span bytes recorded by the tracer
+spans_dropped | the count of spans dropped for any reason. For example, failure queueing or sending.
+messages | the count of messages sent to zipkin. Ex POST requests or Kafka messages.
+message_bytes | the count of encoded message bytes sent. This includes encoding overhead and excludes compression.
+messages_dropped/exception_class_name+ | count of messages dropped broken down by cause.
+span_queue_size | last count of spans in the pending queue
+span_queue_bytes | last count of encoded span bytes in the pending queue

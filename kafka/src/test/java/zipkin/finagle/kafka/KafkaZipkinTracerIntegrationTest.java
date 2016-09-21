@@ -21,25 +21,32 @@ import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Duration;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import kafka.serializer.DefaultDecoder;
-import org.junit.Ignore;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.junit.Rule;
 import org.junit.Test;
 import scala.Option;
 import zipkin.Codec;
 import zipkin.Span;
 import zipkin.finagle.ZipkinTracer;
-import zipkin.finagle.ZipkinTracerTest;
+import zipkin.finagle.ZipkinTracerIntegrationTest;
 import zipkin.finagle.kafka.KafkaZipkinTracer.Config;
+import zipkin.reporter.kafka08.KafkaSender;
 
 import static com.twitter.util.Time.fromMilliseconds;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static scala.collection.JavaConversions.mapAsJavaMap;
 import static zipkin.finagle.FinagleTestObjects.TODAY;
 import static zipkin.finagle.FinagleTestObjects.root;
+import static zipkin.finagle.FinagleTestObjects.seq;
 
-public class KafkaZipkinTracerTest extends ZipkinTracerTest {
+public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest {
 
   final Option<Duration> none = Option.empty(); // avoid having to force generics
   @Rule
@@ -64,13 +71,35 @@ public class KafkaZipkinTracerTest extends ZipkinTracerTest {
     }
   }
 
-  @Ignore @Test(timeout = 1000) // TODO: https://github.com/openzipkin/zipkin-finagle/issues/4
+  @Test
   public void whenKafkaIsDown() throws Exception {
     kafka.shutdownKafka();
+
+    // Make a new tracer that fails faster than 60 seconds
+    tracer.close();
+    Map<String, String> overrides = new LinkedHashMap<>();
+    overrides.put(ProducerConfig.METADATA_FETCH_TIMEOUT_CONFIG, "100");
+    tracer = new KafkaZipkinTracer(KafkaSender.builder()
+        .bootstrapServers(config.bootstrapServers())
+        .topic(config.topic())
+        .overrides(overrides)
+        .build(), config, stats);
 
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), none));
     tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), none));
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), none));
     tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), none));
+
+    Thread.sleep(1500); // wait for kafka request attempt to go through
+
+    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
+        entry(seq("spans"), 1),
+        entry(seq("span_bytes"), 165),
+        entry(seq("spans_dropped"), 1),
+        entry(seq("messages"), 1),
+        entry(seq("message_bytes"), 170),
+        entry(seq("messages_dropped"), 1),
+        entry(seq("messages_dropped", "org.apache.kafka.common.errors.TimeoutException"), 1)
+    );
   }
 }

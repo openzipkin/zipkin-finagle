@@ -46,7 +46,7 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
         .build(), config, stats);
   }
 
-  private KafkaZipkinTracer(KafkaSender kafka, Config config, StatsReceiver stats) {
+  KafkaZipkinTracer(KafkaSender kafka, Config config, StatsReceiver stats) {
     super(kafka, config, stats);
     this.kafka = kafka;
   }
