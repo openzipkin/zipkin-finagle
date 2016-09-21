@@ -25,13 +25,21 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import zipkin.Annotation;
+import zipkin.Codec;
+import zipkin.Endpoint;
 import zipkin.Span;
+import zipkin.reporter.Encoder;
+import zipkin.reporter.Encoding;
 
 import static com.twitter.util.Time.fromMilliseconds;
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.Option.empty;
 import static scala.collection.JavaConversions.mapAsJavaMap;
+import static zipkin.Constants.CLIENT_RECV;
+import static zipkin.Constants.CLIENT_SEND;
 import static zipkin.finagle.FinagleTestObjects.TODAY;
 import static zipkin.finagle.FinagleTestObjects.child;
 import static zipkin.finagle.FinagleTestObjects.root;
@@ -57,6 +65,10 @@ public abstract class ZipkinTracerIntegrationTest {
 
   protected abstract List<List<Span>> getTraces() throws Exception;
 
+  protected int messageSizeInBytes(List<byte[]> encodedSpans) {
+    return Encoding.THRIFT.listSizeInBytes(encodedSpans);
+  }
+
   @Test public void multipleSpansGoIntoSameMessage() throws Exception {
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
@@ -70,10 +82,29 @@ public abstract class ZipkinTracerIntegrationTest {
 
     Thread.sleep(2000); // the AsyncReporter thread has a default interval of 1s
 
+    Endpoint web = Endpoint.create("web", 127 << 24 | 1);
+    Span span1 = Span.builder()
+        .traceId(root.traceId().toLong())
+        .id(root.spanId().toLong())
+        .name("get")
+        .timestamp(TODAY * 1000)
+        .duration(1000L)
+        .addAnnotation(Annotation.create(TODAY * 1000, CLIENT_SEND, web))
+        .addAnnotation(Annotation.create((TODAY + 1) * 1000, CLIENT_RECV, web)).build();
+
+    Span span2 = span1.toBuilder()
+        .traceId(child.traceId().toLong())
+        .parentId(child.parentId().toLong())
+        .id(child.spanId().toLong()).build();
+
+    assertThat(getTraces()).containsExactly(asList(span1, span2));
+    int expectedMessageSize =
+        messageSizeInBytes(asList(Encoder.THRIFT.encode(span1), Encoder.THRIFT.encode(span2)));
+
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(seq("span_bytes"), 341),
+        entry(seq("span_bytes"), Codec.THRIFT.sizeInBytes(span1) + Codec.THRIFT.sizeInBytes(span2)),
         entry(seq("spans"), 2),
-        entry(seq("message_bytes"), 346),
+        entry(seq("message_bytes"), expectedMessageSize),
         entry(seq("messages"), 1)
     );
   }

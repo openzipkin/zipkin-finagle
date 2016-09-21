@@ -36,6 +36,7 @@ import zipkin.Span;
 import zipkin.finagle.ZipkinTracer;
 import zipkin.finagle.ZipkinTracerIntegrationTest;
 import zipkin.finagle.kafka.KafkaZipkinTracer.Config;
+import zipkin.reporter.Encoding;
 import zipkin.reporter.kafka08.KafkaSender;
 
 import static com.twitter.util.Time.fromMilliseconds;
