@@ -1,7 +1,7 @@
 [![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin) [![Build Status](https://travis-ci.org/openzipkin/zipkin-finagle.svg?branch=master)](https://travis-ci.org/openzipkin/zipkin-finagle) [![Download](https://api.bintray.com/packages/openzipkin/maven/zipkin-finagle/images/download.svg) ](https://bintray.com/openzipkin/maven/zipkin-finagle/_latestVersion)
 
 # zipkin-finagle
-Integration between Finagle tracing to Zipkin transports including http and kafka.
+Integration between Finagle tracing to Zipkin transports including http, kafka and scribe.
 
 ## Quick start
 Finagle will use a tracer that it detects in the classpath. For example, depending on `io.zipkin.finagle:zipkin-finagle-http_2.11` will send to Zipkin over Http.
@@ -76,6 +76,21 @@ zipkin.kafka.topic | zipkin | Kafka topic zipkin traces will be sent to
 Ex. Here's how to configure the Kafka server with a system property:
 ```bash
 $ java -Dzipkin.kafka.bootstrapServers=192.168.99.100 ...
+```
+
+### Scribe Configuration
+Adding `io.zipkin.finagle:zipkin-finagle-scribe_2.11` to your classpath will configure Finagle
+to report trace data to the zipkin category of Scribe.
+
+Here are the flags that apply to Scribe:
+
+Flag | Default | Description
+--- | --- | ---
+zipkin.scribe.host | localhost:1463 | The network location of the Scribe service. See http://twitter.github.io/finagle/guide/Names.html
+
+Ex. Here's how to configure the Scribe host with a system property. In this case pointing directly to a zipkin server:
+```bash
+$ java -Dzipkin.scribe.host=zipkinhost:9410 ...
 ```
 
 ### Programmatic
