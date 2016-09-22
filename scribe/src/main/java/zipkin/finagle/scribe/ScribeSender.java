@@ -17,6 +17,7 @@ import com.twitter.finagle.Service;
 import com.twitter.finagle.Status;
 import com.twitter.finagle.Thrift;
 import com.twitter.finagle.thrift.ThriftClientRequest;
+import com.twitter.finagle.tracing.NullTracer;
 import com.twitter.util.Duration;
 import com.twitter.util.Function;
 import com.twitter.util.Future;
@@ -66,7 +67,9 @@ final class ScribeSender extends FinagleSender<Config, ThriftClientRequest, Void
     final Service<ThriftClientRequest, byte[]> delegate;
 
     ScribeClient(Config config) {
-      delegate = Thrift.client().newService(config.host(), "zipkin-scribe");
+      delegate = Thrift.client()
+          .withTracer(new NullTracer())
+          .newService(config.host(), "zipkin-scribe");
     }
 
     @Override public Future<Void> apply(ThriftClientRequest request) {
