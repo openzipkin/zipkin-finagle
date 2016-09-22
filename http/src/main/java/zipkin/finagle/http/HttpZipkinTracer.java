@@ -21,10 +21,9 @@ import com.twitter.finagle.stats.DefaultStatsReceiver$;
 import com.twitter.finagle.stats.NullStatsReceiver;
 import com.twitter.finagle.stats.StatsReceiver;
 import com.twitter.finagle.tracing.Tracer;
-import com.twitter.util.AbstractClosable;
-import com.twitter.util.Closables;
 import com.twitter.util.Future;
 import com.twitter.util.Time;
+import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
 import zipkin.finagle.ZipkinTracer;
 import zipkin.finagle.ZipkinTracerFlags;
@@ -69,12 +68,12 @@ public final class HttpZipkinTracer extends ZipkinTracer {
     return new HttpZipkinTracer(config, stats);
   }
 
-  @Override public Future<BoxedUnit> close(Time deadline) {
-    return Closables.sequence(http.client, new AbstractClosable() {
-      @Override public Future<BoxedUnit> close(Time deadline) {
+  @Override public Future<BoxedUnit> close(final Time deadline) {
+    return http.closeFuture().flatMap(new AbstractFunction1<BoxedUnit, Future<BoxedUnit>>() {
+      @Override public Future<BoxedUnit> apply(BoxedUnit v1) {
         return HttpZipkinTracer.super.close(deadline);
       }
-    }).close(deadline);
+    });
   }
 
   @AutoValue
