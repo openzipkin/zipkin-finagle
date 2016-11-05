@@ -22,6 +22,7 @@ import com.twitter.util.AbstractClosable;
 import com.twitter.util.Closables;
 import com.twitter.util.Future;
 import com.twitter.util.Time;
+import java.io.IOException;
 import scala.runtime.BoxedUnit;
 import zipkin.finagle.ZipkinTracer;
 import zipkin.finagle.ZipkinTracerFlags;
@@ -78,8 +79,12 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
     return Closables.sequence(
         new AbstractClosable() {
           @Override public Future<BoxedUnit> close(Time deadline) {
-            kafka.close(); // TODO: blocking
-            return Future.Done();
+            try {
+              kafka.close(); // TODO: blocking
+              return Future.Done();
+            } catch (IOException e) {
+              return Future.exception(e);
+            }
           }
         },
         new AbstractClosable() {

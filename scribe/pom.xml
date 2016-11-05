@@ -64,7 +64,7 @@
     <dependency>
       <groupId>io.zipkin.java</groupId>
       <artifactId>zipkin-collector-scribe</artifactId>
-      <version>1.11.1</version>
+      <version>1.14.4</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
