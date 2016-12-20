@@ -32,9 +32,8 @@ import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 import zipkin.BinaryAnnotation;
 import zipkin.Span;
-import zipkin.reporter.AsyncReporter;
+import zipkin.internal.Util;
 import zipkin.reporter.Reporter;
-import zipkin.reporter.Sender;
 
 final class SpanRecorder extends AbstractClosable {
   private static final byte[] TRUE = {1};
@@ -157,7 +156,7 @@ final class SpanRecorder extends AbstractClosable {
         byte[] val = ByteBuffer.allocate(8).putDouble(0, (Double) value).array();
         span.addBinaryAnnotation(key, val, BinaryAnnotation.Type.DOUBLE);
       } else if ((value instanceof String)) {
-        byte[] val = ByteBuffer.wrap(((String) value).getBytes()).array();
+        byte[] val = ByteBuffer.wrap(((String) value).getBytes(Util.UTF_8)).array();
         span.addBinaryAnnotation(key, val, BinaryAnnotation.Type.STRING);
       } else {
         unhandledReceiver.counter0(value.getClass().getName()).incr();

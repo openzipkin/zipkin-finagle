@@ -70,9 +70,9 @@ final class MutableSpan {
     }
 
     if (!isComplete &&
-        value.equals(CLIENT_RECV) ||
-        value.equals(SERVER_SEND) ||
-        value.equals(TimeoutFilter.TimeoutAnnotation())) {
+        (value.equals(CLIENT_RECV) ||
+         value.equals(SERVER_SEND) ||
+         value.equals(TimeoutFilter.TimeoutAnnotation()))) {
       if (!annotations.isEmpty()) {
         span.duration(timestamp.inMicroseconds() - annotations.get(0).timestamp);
       }

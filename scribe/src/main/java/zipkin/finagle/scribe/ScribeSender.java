@@ -31,10 +31,11 @@ import scala.runtime.BoxedUnit;
 import zipkin.finagle.FinagleSender;
 import zipkin.finagle.scribe.ScribeZipkinTracer.Config;
 import zipkin.reporter.libthrift.InternalScribeCodec;
+import zipkin.internal.Util;
 
 /** Receives the Finagle generated traces and sends them off to Zipkin via Scribe. */
 final class ScribeSender extends FinagleSender<Config, ThriftClientRequest, Void> {
-  static final byte[] category = "zipkin".getBytes();
+  static final byte[] category = "zipkin".getBytes(Util.UTF_8);
 
   ScribeSender(Config config) {
     super(config);
@@ -94,7 +95,7 @@ final class ScribeSender extends FinagleSender<Config, ThriftClientRequest, Void
   }
 
   static final Function<byte[], Future<Void>> READ_FUTURE = new Function<byte[], Future<Void>>() {
-    public Future<Void> apply(byte[] responseBytes) {
+    @Override public Future<Void> apply(byte[] responseBytes) {
       TBinaryProtocol iprot = new TBinaryProtocol(new TMemoryInputTransport(responseBytes));
       try {
         if (InternalScribeCodec.readLogResponse(0, iprot)) {
