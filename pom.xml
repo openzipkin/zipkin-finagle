@@ -45,8 +45,8 @@
 
     <!-- version numbers that are used more than once -->
     <scala.binary.version>2.11</scala.binary.version>
-    <finagle.version>6.39.0</finagle.version>
-    <zipkin-reporter.version>0.6.9</zipkin-reporter.version>
+    <finagle.version>6.41.0</finagle.version>
+    <zipkin-reporter.version>0.6.11</zipkin-reporter.version>
     <license-maven-plugin.version>2.11</license-maven-plugin.version>
   </properties>
 
