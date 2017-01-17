@@ -76,11 +76,12 @@
     <tag>HEAD</tag>
   </scm>
 
+  <!-- Developer section is needed for Maven Central, but doesn't need to include each person -->
   <developers>
     <developer>
-      <id>sveinnfannar</id>
-      <name>Sveinn Fannar</name>
-      <email>sveinnfannar@gmail.com</email>
+      <id>openzipkin</id>
+      <name>OpenZipkin Gitter</name>
+      <url>https://gitter.im/openzipkin/zipkin</url>
     </developer>
   </developers>
 
