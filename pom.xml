@@ -44,8 +44,8 @@
     <main.basedir>${project.basedir}</main.basedir>
 
     <!-- version numbers that are used more than once -->
-    <scala.binary.version>2.11</scala.binary.version>
-    <finagle.version>6.41.0</finagle.version>
+    <scala.binary.version>2.12</scala.binary.version>
+    <finagle.version>6.42.0</finagle.version>
     <zipkin-reporter.version>0.6.12</zipkin-reporter.version>
     <license-maven-plugin.version>2.11</license-maven-plugin.version>
   </properties>
