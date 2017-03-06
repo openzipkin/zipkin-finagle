@@ -30,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import zipkin.Span;
 
-import static com.twitter.util.Time.fromMilliseconds;
+import com.twitter.util.Time;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.Option.empty;
@@ -98,7 +98,7 @@ public class SpanRecorderTest {
 
   @Test public void incrementsCounterWhenUnexpected_binaryAnnotation() throws Exception {
     recorder.record(
-        new Record(root, fromMilliseconds(TODAY),
+        new Record(root, Time.fromMilliseconds(TODAY),
             new Annotation.BinaryAnnotation("web", new Date()), empty())
     );
 
@@ -114,7 +114,7 @@ public class SpanRecorderTest {
 
   @Test public void incrementsCounterWhenUnexpected_annotation() throws Exception {
     recorder.record(
-        new Record(root, fromMilliseconds(TODAY), new FancyAnnotation(), empty())
+        new Record(root, Time.fromMilliseconds(TODAY), new FancyAnnotation(), empty())
     );
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(

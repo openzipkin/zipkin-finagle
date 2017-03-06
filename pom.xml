@@ -18,7 +18,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.zipkin.finagle</groupId>
-  <artifactId>zipkin-finagle-parent_2.11</artifactId>
+  <artifactId>zipkin-finagle-parent_2.12</artifactId>
   <version>0.3.5-SNAPSHOT</version>
   <packaging>pom</packaging>
 
