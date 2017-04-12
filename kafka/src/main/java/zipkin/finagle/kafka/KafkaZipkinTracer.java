@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,6 +18,7 @@ import com.google.auto.value.AutoValue;
 import com.twitter.finagle.stats.DefaultStatsReceiver$;
 import com.twitter.finagle.stats.NullStatsReceiver;
 import com.twitter.finagle.stats.StatsReceiver;
+import com.twitter.finagle.tracing.Tracer;
 import com.twitter.util.AbstractClosable;
 import com.twitter.util.Closables;
 import com.twitter.util.Future;
@@ -28,7 +29,7 @@ import zipkin.finagle.ZipkinTracer;
 import zipkin.finagle.ZipkinTracerFlags;
 import zipkin.reporter.kafka08.KafkaSender;
 
-@AutoService(com.twitter.finagle.tracing.Tracer.class)
+@AutoService(Tracer.class)
 public final class KafkaZipkinTracer extends ZipkinTracer {
 
   private final KafkaSender kafka;
@@ -107,9 +108,7 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
           .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
     }
 
-    public Builder toBuilder() {
-      return new AutoValue_KafkaZipkinTracer_Config.Builder(this);
-    }
+    public abstract Builder toBuilder();
 
     abstract String bootstrapServers();
 
