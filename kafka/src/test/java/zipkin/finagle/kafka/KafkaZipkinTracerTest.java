@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -11,28 +11,19 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin.finagle.scribe;
+package zipkin.finagle.kafka;
 
-import com.twitter.app.GlobalFlag$;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static scala.collection.JavaConversions.asJavaCollection;
 
-public class ScribeZipkinTracerFlagsTest {
-
-  @Test
-  public void flagNamespace() {
-    assertThat(ScribeZipkinTracerFlags.host.getGlobalFlag().name())
-        .isEqualTo("zipkin.scribe.host");
-  }
+public class KafkaZipkinTracerTest {
 
   @Test
-  public void registersGlobalFlags() {
-    assertThat(
-        asJavaCollection(GlobalFlag$.MODULE$.getAll(ScribeZipkinTracerFlags.class.getClassLoader())))
-        .containsOnlyOnce(
-            ScribeZipkinTracerFlags.host.getGlobalFlag()
-        );
+  public void bootstrapServersParsesMultipleHosts() {
+    zipkin.kafka.bootstrapServers$.Flag.parse("host1:9092,host2:9092");
+
+    assertThat(KafkaZipkinTracer.Config.builder().build().bootstrapServers())
+        .isEqualTo("host1:9092,host2:9092");
   }
 }

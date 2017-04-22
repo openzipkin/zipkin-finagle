@@ -23,9 +23,11 @@ import com.twitter.util.Closables;
 import com.twitter.util.Future;
 import com.twitter.util.Time;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Iterator;
+import scala.collection.mutable.StringBuilder;
 import scala.runtime.BoxedUnit;
 import zipkin.finagle.ZipkinTracer;
-import zipkin.finagle.ZipkinTracerFlags;
 import zipkin.reporter.kafka08.KafkaSender;
 
 @AutoService(com.twitter.finagle.tracing.Tracer.class)
@@ -96,15 +98,23 @@ public final class KafkaZipkinTracer extends ZipkinTracer {
 
   @AutoValue
   public static abstract class Config implements ZipkinTracer.Config {
-    /**
-     * Creates a builder with the correct defaults derived from {@link KafkaZipkinTracerFlags
-     * flags}
-     */
+    /** Creates a builder with the correct defaults derived from global flags */
     public static Builder builder() {
       return new AutoValue_KafkaZipkinTracer_Config.Builder()
-          .bootstrapServers(KafkaZipkinTracerFlags.bootstrapServers())
-          .topic(KafkaZipkinTracerFlags.topic())
-          .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
+          .bootstrapServers(bootstrapServersFromFlag())
+          .topic(zipkin.kafka.topic$.Flag.apply())
+          .initialSampleRate(zipkin.initialSampleRate$.Flag.apply());
+    }
+
+    static String bootstrapServersFromFlag() {
+      StringBuilder result = new StringBuilder();
+      for (Iterator<InetSocketAddress> i = zipkin.kafka.bootstrapServers$.Flag.apply().iterator();
+          i.hasNext(); ) {
+        InetSocketAddress next = i.next();
+        result.append(next.getHostName()).append(':').append(next.getPort());
+        if (i.hasNext()) result.append(',');
+      }
+      return result.toString();
     }
 
     abstract public Builder toBuilder();
