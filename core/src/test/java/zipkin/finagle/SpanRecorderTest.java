@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -30,7 +30,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import zipkin.Span;
 
-import static com.twitter.util.Time.fromMilliseconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.Option.empty;
@@ -98,7 +97,7 @@ public class SpanRecorderTest {
 
   @Test public void incrementsCounterWhenUnexpected_binaryAnnotation() throws Exception {
     recorder.record(
-        new Record(root, fromMilliseconds(TODAY),
+        new Record(root, Time.fromMilliseconds(TODAY),
             new Annotation.BinaryAnnotation("web", new Date()), empty())
     );
 
@@ -114,7 +113,7 @@ public class SpanRecorderTest {
 
   @Test public void incrementsCounterWhenUnexpected_annotation() throws Exception {
     recorder.record(
-        new Record(root, fromMilliseconds(TODAY), new FancyAnnotation(), empty())
+        new Record(root, Time.fromMilliseconds(TODAY), new FancyAnnotation(), empty())
     );
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(

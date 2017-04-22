@@ -19,11 +19,11 @@
 
   <parent>
     <groupId>io.zipkin.finagle</groupId>
-    <artifactId>zipkin-finagle-parent_2.11</artifactId>
-    <version>0.3.7-SNAPSHOT</version>
+    <artifactId>zipkin-finagle-parent_2.12</artifactId>
+    <version>0.4.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>zipkin-finagle-kafka_2.11</artifactId>
+  <artifactId>zipkin-finagle-kafka_2.12</artifactId>
   <name>Zipkin Finagle: Kafka</name>
 
   <properties>
@@ -49,12 +49,46 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Fix a whole bunch of dependency versions until we use testcontainers to fix classpath -->
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <version>0.10.2.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-test</artifactId>
+      <version>3.2.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka_2.12</artifactId>
+      <version>0.10.2.0</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
     <dependency>
       <groupId>com.github.charithe</groupId>
       <artifactId>kafka-junit</artifactId>
-      <!-- pinned to 0.8.2.2 -->
-      <version>1.7</version>
+      <!-- pinned to 0.10.2.0 -->
+      <version>3.0.3</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.kafka</groupId>
+          <artifactId>kafka_2.11</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 </project>

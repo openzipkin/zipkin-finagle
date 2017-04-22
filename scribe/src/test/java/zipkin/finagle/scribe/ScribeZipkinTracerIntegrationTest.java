@@ -19,6 +19,7 @@ import com.twitter.finagle.tracing.Annotation.Rpc;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Duration;
+import com.twitter.util.Time;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;
@@ -34,7 +35,6 @@ import zipkin.reporter.libthrift.InternalScribeCodec;
 import zipkin.storage.InMemoryStorage;
 import zipkin.storage.QueryRequest;
 
-import static com.twitter.util.Time.fromMilliseconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.collection.JavaConversions.mapAsJavaMap;
@@ -81,10 +81,10 @@ public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTe
     config = config.toBuilder().host("127.0.0.1:65535").build();
     createTracer();
 
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), none));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), none));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), none));
-    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), none));
 
     Thread.sleep(1500); // wait for scribe request attempt to go through
 
