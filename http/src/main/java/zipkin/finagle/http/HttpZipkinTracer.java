@@ -26,7 +26,6 @@ import com.twitter.util.Time;
 import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
 import zipkin.finagle.ZipkinTracer;
-import zipkin.finagle.ZipkinTracerFlags;
 
 @AutoService(Tracer.class)
 public final class HttpZipkinTracer extends ZipkinTracer {
@@ -78,15 +77,13 @@ public final class HttpZipkinTracer extends ZipkinTracer {
 
   @AutoValue
   public static abstract class Config implements ZipkinTracer.Config {
-    /**
-     * Creates a builder with the correct defaults derived from {@link HttpZipkinTracerFlags flags}
-     */
+    /** Creates a builder with the correct defaults derived from global flags */
     public static Builder builder() {
       return new AutoValue_HttpZipkinTracer_Config.Builder()
-          .hostHeader(HttpZipkinTracerFlags.hostHeader())
-          .host(HttpZipkinTracerFlags.host())
-          .compressionEnabled(HttpZipkinTracerFlags.compressionEnabled())
-          .initialSampleRate(ZipkinTracerFlags.initialSampleRate());
+          .hostHeader(zipkin.http.hostHeader$.Flag.apply())
+          .host(zipkin.http.host$.Flag.apply())
+          .compressionEnabled(zipkin.http.compressionEnabled$.Flag.apply())
+          .initialSampleRate(zipkin.initialSampleRate$.Flag.apply());
     }
 
     abstract public Builder toBuilder();
