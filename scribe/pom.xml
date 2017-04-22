@@ -20,7 +20,7 @@
   <parent>
     <groupId>io.zipkin.finagle</groupId>
     <artifactId>zipkin-finagle-parent_2.11</artifactId>
-    <version>0.3.5-SNAPSHOT</version>
+    <version>0.3.5</version>
   </parent>
 
   <artifactId>zipkin-finagle-scribe_2.11</artifactId>
