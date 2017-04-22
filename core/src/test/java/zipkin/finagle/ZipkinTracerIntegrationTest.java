@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,6 +19,7 @@ import com.twitter.finagle.tracing.Annotation.ClientSend;
 import com.twitter.finagle.tracing.Annotation.Rpc;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
+import com.twitter.util.Time;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;
@@ -32,7 +33,6 @@ import zipkin.Span;
 import zipkin.reporter.Encoder;
 import zipkin.reporter.Encoding;
 
-import static com.twitter.util.Time.fromMilliseconds;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -70,15 +70,15 @@ public abstract class ZipkinTracerIntegrationTest {
   }
 
   @Test public void multipleSpansGoIntoSameMessage() throws Exception {
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
 
-    tracer.record(new Record(child, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
-    tracer.record(new Record(child, fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(child, fromMilliseconds(TODAY), new ClientSend(), empty()));
-    tracer.record(new Record(child, fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+    tracer.record(new Record(child, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(child, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(child, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(child, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
 
     Thread.sleep(2000); // the AsyncReporter thread has a default interval of 1s
 

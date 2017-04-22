@@ -19,6 +19,7 @@ import com.twitter.finagle.tracing.Annotation.Rpc;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Duration;
+import com.twitter.util.Time;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,6 @@ import zipkin.finagle.ZipkinTracerIntegrationTest;
 import zipkin.finagle.http.HttpZipkinTracer.Config;
 import zipkin.junit.ZipkinRule;
 
-import static com.twitter.util.Time.fromMilliseconds;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -63,10 +63,10 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
     config = config.toBuilder().host("127.0.0.1:65535").build();
     createTracer();
 
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), none));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), none));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), none));
-    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), none));
 
     Thread.sleep(1500); // wait for http request attempt to go through
 
@@ -90,10 +90,10 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
 
     // create instructions to create a complete RPC span
     List<Record> records = asList(
-        new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), none),
-        new Record(root, fromMilliseconds(TODAY), new Rpc("get"), none),
-        new Record(root, fromMilliseconds(TODAY), new ClientSend(), none),
-        new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), none)
+        new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none),
+        new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), none),
+        new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), none),
+        new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), none)
     );
 
     MockWebServer server = new MockWebServer();

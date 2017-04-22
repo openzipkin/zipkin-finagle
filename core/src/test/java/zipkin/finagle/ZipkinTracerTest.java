@@ -19,6 +19,7 @@ import com.twitter.finagle.tracing.Annotation.ClientSend;
 import com.twitter.finagle.tracing.Annotation.Rpc;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
+import com.twitter.util.Time;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -31,7 +32,6 @@ import zipkin.Span;
 import zipkin.reporter.AsyncReporter;
 import zipkin.reporter.Sender;
 
-import static com.twitter.util.Time.fromMilliseconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.Option.empty;
@@ -63,9 +63,9 @@ public class ZipkinTracerTest {
   }
 
   @Test public void unfinishedSpansArentImplicitlyReported() throws Exception {
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
 
     tracer.reporter.flush();
 
@@ -73,12 +73,12 @@ public class ZipkinTracerTest {
   }
 
   @Test public void finishedSpansAreImplicitlyReported() throws Exception {
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
 
     // client receive reports the span
-    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
 
     tracer.reporter.flush();
 
@@ -90,10 +90,10 @@ public class ZipkinTracerTest {
 
   @Test
   public void reportIncrementsAcceptedMetrics() throws Exception {
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
 
     tracer.reporter.flush();
 
@@ -112,10 +112,10 @@ public class ZipkinTracerTest {
       throw new IllegalStateException(new NullPointerException());
     }));
 
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY), new ClientSend(), empty()));
-    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
 
     tracer.reporter.flush();
 
