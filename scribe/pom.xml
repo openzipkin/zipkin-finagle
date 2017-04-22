@@ -37,13 +37,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.thrift</groupId>
-      <artifactId>libthrift</artifactId>
-      <!-- avoids transitive dep on org.apache.thrift:libthrift:jar:0.5.0-1 -->
-      <version>0.9.3</version>
-    </dependency>
-
-    <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>finagle-thrift_${scala.binary.version}</artifactId>
       <version>${finagle.version}</version>
@@ -64,7 +57,7 @@
     <dependency>
       <groupId>io.zipkin.java</groupId>
       <artifactId>zipkin-collector-scribe</artifactId>
-      <version>1.16.2</version>
+      <version>1.23.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
