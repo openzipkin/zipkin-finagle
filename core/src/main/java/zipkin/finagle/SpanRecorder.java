@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -127,11 +127,6 @@ final class SpanRecorder extends AbstractClosable {
     } else if ((annotation instanceof Annotation.ServiceName)) {
       String service = ((Annotation.ServiceName) annotation).service();
       span.setServiceName(service);
-    } else if ((annotation instanceof Annotation.Rpcname)) {
-      Annotation.Rpcname rpcName = (Annotation.Rpcname) annotation;
-      String service = rpcName.service();
-      String rpc = rpcName.rpc();
-      span.setServiceName(service).setName(rpc);
     } else if ((annotation instanceof Annotation.BinaryAnnotation)) {
       String key = ((Annotation.BinaryAnnotation) annotation).key();
       Object value = ((Annotation.BinaryAnnotation) annotation).value();

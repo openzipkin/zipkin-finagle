@@ -81,7 +81,12 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
         entry(seq("messages_dropped", "com.twitter.finagle.Failure",
             "com.twitter.finagle.ConnectionFailedException"), 1),
         entry(seq("messages_dropped", "com.twitter.finagle.Failure",
-            "com.twitter.finagle.ConnectionFailedException", "java.net.ConnectException"), 1)
+            "com.twitter.finagle.ConnectionFailedException",
+            "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1),
+        entry(seq("messages_dropped", "com.twitter.finagle.Failure",
+            "com.twitter.finagle.ConnectionFailedException",
+            "io.netty.channel.AbstractChannel$AnnotatedConnectException",
+            "java.net.ConnectException"), 1)
     );
   }
 
