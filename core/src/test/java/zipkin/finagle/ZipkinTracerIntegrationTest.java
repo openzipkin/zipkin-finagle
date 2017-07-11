@@ -54,6 +54,7 @@ public abstract class ZipkinTracerIntegrationTest {
   @After
   public void closeTracer() throws Exception {
     tracer.close();
+    stats.clear();
   }
 
   @Before

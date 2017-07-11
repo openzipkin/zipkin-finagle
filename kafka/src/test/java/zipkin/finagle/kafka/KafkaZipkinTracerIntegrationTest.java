@@ -81,6 +81,7 @@ public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTes
 
     // Make a new tracer that fails faster than 60 seconds
     tracer.close();
+    stats.clear();
     Map<String, String> overrides = new LinkedHashMap<>();
     overrides.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, "100");
     tracer = new KafkaZipkinTracer(KafkaSender.builder()

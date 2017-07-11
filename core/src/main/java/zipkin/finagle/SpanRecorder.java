@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
-import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 import zipkin.BinaryAnnotation;
 import zipkin.Span;
@@ -40,7 +39,7 @@ final class SpanRecorder extends AbstractClosable {
   private static final byte[] FALSE = {0};
   private static final String ERROR_FORMAT = "%s: %s"; // annotation: errorMessage
   final Duration ttl = Duration.fromSeconds(120);
-  private final ConcurrentHashMap<TraceId, MutableSpan> spanMap = new ConcurrentHashMap(64);
+  private final ConcurrentHashMap<TraceId, MutableSpan> spanMap = new ConcurrentHashMap<>(64);
   private final Reporter<Span> reporter;
   /**
    * Incrementing a counter instead of throwing allows finagle to add new event types ahead of
@@ -52,12 +51,9 @@ final class SpanRecorder extends AbstractClosable {
   SpanRecorder(Reporter<Span> reporter, StatsReceiver stats, Timer timer) {
     this.reporter = reporter;
     this.unhandledReceiver = stats.scope("record").scope("unhandled");
-    this.flusher = timer.schedule(ttl.$div(2L), new AbstractFunction0() {
-      @Override
-      public Void apply() {
-        flush(ttl.ago());
-        return null;
-      }
+    this.flusher = timer.schedule(ttl.$div(2L), () -> {
+      flush(ttl.ago());
+      return null;
     });
   }
 

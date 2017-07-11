@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,7 +18,7 @@ import com.twitter.finagle.Http$;
 import com.twitter.finagle.Service;
 import com.twitter.finagle.ServiceFactory;
 import com.twitter.finagle.Stack;
-import com.twitter.finagle.http.Methods;
+import com.twitter.finagle.http.Method;
 import com.twitter.finagle.http.Request;
 import com.twitter.finagle.http.Response;
 import com.twitter.finagle.tracing.NullTracer;
@@ -32,6 +32,7 @@ import zipkin.reporter.Encoding;
 
 /** Receives the Finagle generated traces and sends them off to Zipkin via Http. */
 final class HttpSender extends FinagleSender<HttpZipkinTracer.Config, Request, Response> {
+  static final Method POST = Method.apply("POST");
   final HttpZipkinTracer.Config config;
 
   HttpSender(HttpZipkinTracer.Config config) {
@@ -59,7 +60,7 @@ final class HttpSender extends FinagleSender<HttpZipkinTracer.Config, Request, R
 
   @Override protected Request makeRequest(List<byte[]> spans) throws IOException {
     byte[] thrift = BytesMessageEncoder.THRIFT.encode(spans);
-    Request request = Request.apply(Methods.POST, "/api/v1/spans");
+    Request request = Request.apply(POST, "/api/v1/spans");
     request.headerMap().add("Host", config.hostHeader());
     request.headerMap().add("Content-Type", "application/x-thrift");
     // Eventhough finagle compression flag exists, it only works for servers!

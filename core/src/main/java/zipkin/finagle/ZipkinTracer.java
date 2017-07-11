@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -17,7 +17,7 @@ import com.twitter.finagle.stats.StatsReceiver;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.finagle.tracing.TraceId;
 import com.twitter.finagle.tracing.Tracer;
-import com.twitter.finagle.util.DefaultTimer$;
+import com.twitter.finagle.util.DefaultTimer;
 import com.twitter.finagle.zipkin.core.SamplingTracer;
 import com.twitter.util.Closable;
 import com.twitter.util.Duration;
@@ -100,12 +100,12 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
      * @param stats We generate stats to keep track of traces sent, failures and so on
      */
     RawZipkinTracer(AsyncReporter<Span> reporter, StatsReceiver stats) {
-      this.recorder = new SpanRecorder(reporter, stats, DefaultTimer$.MODULE$.twitter());
+      this.recorder = new SpanRecorder(reporter, stats, DefaultTimer.getInstance());
     }
 
     @Override
     public Option<Object> sampleTrace(TraceId traceId) {
-      return new Some(BoxesRunTime.boxToBoolean(true));
+      return Some.apply(true);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,7 +16,6 @@ package zipkin.finagle;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import zipkin.Endpoint;
 
 final class Endpoints {
@@ -25,13 +24,9 @@ final class Endpoints {
   static final Endpoint LOCAL;
 
   static {
-    int ipv4;
-    try {
-      ipv4 = toIpv4(InetAddress.getLoopbackAddress());
-    } catch (RuntimeException e) {
-      ipv4 = UNKNOWN.ipv4;
-    }
-    LOCAL = Endpoint.create("", ipv4, 0);
+    Endpoint.Builder builder = Endpoint.builder().serviceName("");
+    builder.parseIp(InetAddress.getLoopbackAddress());
+    LOCAL = builder.build();
   }
 
   private Endpoints() {
@@ -43,15 +38,13 @@ final class Endpoints {
    */
   static Endpoint fromSocketAddress(SocketAddress socketAddress) {
     if (socketAddress instanceof InetSocketAddress) {
+      Endpoint.Builder builder = Endpoint.builder().serviceName("");
       InetSocketAddress inet = (InetSocketAddress) socketAddress;
-      int ipv4 = toIpv4(inet.getAddress());
-      return zipkin.Endpoint.create("", ipv4, inet.getPort());
+      builder.parseIp(inet.getAddress());
+      builder.port(inet.getPort());
+      return builder.build();
     }
     return UNKNOWN;
-  }
-
-  private static int toIpv4(InetAddress inet) {
-    return ByteBuffer.wrap(inet.getAddress()).getInt();
   }
 
   /**
@@ -59,7 +52,7 @@ final class Endpoints {
    */
   static Endpoint boundEndpoint(Endpoint endpoint) {
     if (endpoint.ipv4 == UNKNOWN.ipv4 || endpoint.ipv4 == LOOPBACK.ipv4) {
-      return endpoint.toBuilder().ipv4(LOCAL.ipv4).build();
+      return endpoint.toBuilder().ipv6(LOCAL.ipv6).ipv4(LOCAL.ipv4).build();
     } else {
       return endpoint;
     }
