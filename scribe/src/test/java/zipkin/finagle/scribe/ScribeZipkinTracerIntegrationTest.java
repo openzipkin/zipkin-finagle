@@ -77,9 +77,7 @@ public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTe
 
   @Test
   public void whenScribeIsDown() throws Exception {
-    closeTracer();
-    config = config.toBuilder().host("127.0.0.1:65535").build();
-    createTracer();
+    scribe.close();
 
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), none));
@@ -89,17 +87,22 @@ public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTe
     Thread.sleep(1500); // wait for scribe request attempt to go through
 
     assertThat(mapAsJavaMap(stats.counters())).containsOnly(
-        entry(seq("spans"), 1),
-        entry(seq("span_bytes"), 165),
-        entry(seq("spans_dropped"), 1),
-        entry(seq("messages"), 1),
-        entry(seq("message_bytes"), 273),
-        entry(seq("messages_dropped"), 1),
-        entry(seq("messages_dropped", "com.twitter.finagle.Failure"), 1),
+        entry(seq("spans"), 1L),
+        entry(seq("span_bytes"), 165L),
+        entry(seq("spans_dropped"), 1L),
+        entry(seq("messages"), 1L),
+        entry(seq("message_bytes"), 273L),
+        entry(seq("messages_dropped"), 1L),
+        entry(seq("messages_dropped", "com.twitter.finagle.Failure"), 1L),
         entry(seq("messages_dropped", "com.twitter.finagle.Failure",
-            "com.twitter.finagle.ConnectionFailedException"), 1),
+            "com.twitter.finagle.ConnectionFailedException"), 1L),
         entry(seq("messages_dropped", "com.twitter.finagle.Failure",
-            "com.twitter.finagle.ConnectionFailedException", "java.net.ConnectException"), 1)
+            "com.twitter.finagle.ConnectionFailedException",
+            "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1L),
+        entry(seq("messages_dropped", "com.twitter.finagle.Failure",
+            "com.twitter.finagle.ConnectionFailedException",
+            "io.netty.channel.AbstractChannel$AnnotatedConnectException",
+            "java.net.ConnectException"), 1L)
     );
   }
 }
