@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -31,11 +31,10 @@ import scala.runtime.BoxedUnit;
 import zipkin.finagle.FinagleSender;
 import zipkin.finagle.scribe.ScribeZipkinTracer.Config;
 import zipkin.reporter.libthrift.InternalScribeCodec;
-import zipkin.internal.Util;
 
 /** Receives the Finagle generated traces and sends them off to Zipkin via Scribe. */
 final class ScribeSender extends FinagleSender<Config, ThriftClientRequest, Void> {
-  static final byte[] category = "zipkin".getBytes(Util.UTF_8);
+  static final byte[] category = new byte[] {'z', 'i', 'p', 'k', 'i', 'n'};
 
   ScribeSender(Config config) {
     super(config);

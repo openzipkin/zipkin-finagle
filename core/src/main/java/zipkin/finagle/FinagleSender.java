@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2017 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -27,8 +27,6 @@ import zipkin.reporter.Encoding;
 import zipkin.reporter.Sender;
 import zipkin.reporter.internal.AwaitableCallback;
 
-import static zipkin.internal.Util.checkNotNull;
-
 /** Receives the Finagle generated traces and sends them off. */
 public abstract class FinagleSender<C extends ZipkinTracer.Config, Req, Rep> implements Sender {
   final Service<Req, Rep> client;
@@ -37,7 +35,9 @@ public abstract class FinagleSender<C extends ZipkinTracer.Config, Req, Rep> imp
   transient boolean closeCalled;
 
   protected FinagleSender(C config) {
-    this.client = checkNotNull(newClient(config), "client");
+    if (config == null) throw new NullPointerException("config == null");
+    this.client = newClient(config);
+    if (client == null) throw new NullPointerException("client == null");
   }
 
   protected abstract Service<Req, Rep> newClient(C config);

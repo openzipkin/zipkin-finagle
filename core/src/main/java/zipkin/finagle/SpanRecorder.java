@@ -26,15 +26,16 @@ import com.twitter.util.Timer;
 import com.twitter.util.TimerTask;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import scala.runtime.BoxedUnit;
 import zipkin.BinaryAnnotation;
 import zipkin.Span;
-import zipkin.internal.Util;
 import zipkin.reporter.Reporter;
 
 final class SpanRecorder extends AbstractClosable {
+  private static final Charset UTF_8 = Charset.forName("UTF-8");
   private static final byte[] TRUE = {1};
   private static final byte[] FALSE = {0};
   private static final String ERROR_FORMAT = "%s: %s"; // annotation: errorMessage
@@ -147,7 +148,7 @@ final class SpanRecorder extends AbstractClosable {
         byte[] val = ByteBuffer.allocate(8).putDouble(0, (Double) value).array();
         span.addBinaryAnnotation(key, val, BinaryAnnotation.Type.DOUBLE);
       } else if ((value instanceof String)) {
-        byte[] val = ByteBuffer.wrap(((String) value).getBytes(Util.UTF_8)).array();
+        byte[] val = ByteBuffer.wrap(((String) value).getBytes(UTF_8)).array();
         span.addBinaryAnnotation(key, val, BinaryAnnotation.Type.STRING);
       } else {
         unhandledReceiver.counter0(value.getClass().getName()).incr();
