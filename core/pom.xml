@@ -32,6 +32,45 @@
 
   <build>
     <plugins>
+      <!-- Repackage internal zipkin classes -->
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <minimizeJar>true</minimizeJar>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <relocations>
+                <relocation>
+                  <pattern>zipkin.reporter.internal</pattern>
+                  <shadedPattern>zipkin.finagle.internal</shadedPattern>
+                </relocation>
+              </relocations>
+              <artifactSet>
+                <includes>
+                  <include>io.zipkin.reporter:zipkin-reporter</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <!-- Shade references to AwaitableCallback until it is not internal -->
+                  <artifact>io.zipkin.reporter:zipkin-reporter</artifact>
+                  <includes>
+                    <include>zipkin/reporter/internal/AwaitableCallback.class</include>
+                  </includes>
+                  <excludes>
+                    <exclude>*</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.0.2</version>

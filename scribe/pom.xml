@@ -61,4 +61,47 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <!-- Repackage internal zipkin classes -->
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <minimizeJar>true</minimizeJar>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <relocations>
+                <relocation>
+                  <pattern>zipkin.reporter.libthrift</pattern>
+                  <shadedPattern>zipkin.finagle.scribe.internal</shadedPattern>
+                </relocation>
+              </relocations>
+              <artifactSet>
+                <includes>
+                  <include>io.zipkin.reporter:zipkin-sender-libthrift</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <!-- Shade references so there's no dependency on zipkin-sender-libthrift -->
+                  <artifact>io.zipkin.reporter:zipkin-sender-libthrift</artifact>
+                  <includes>
+                    <include>zipkin/reporter/libthrift/InternalScribeCodec.class</include>
+                  </includes>
+                  <excludes>
+                    <exclude>*</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

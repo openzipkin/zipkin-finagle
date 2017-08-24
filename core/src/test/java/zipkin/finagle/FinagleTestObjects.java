@@ -16,13 +16,14 @@ package zipkin.finagle;
 import com.twitter.finagle.tracing.Flags$;
 import com.twitter.finagle.tracing.SpanId;
 import com.twitter.finagle.tracing.TraceId;
+import java.util.Calendar;
+import java.util.TimeZone;
 import scala.Option;
-import scala.collection.JavaConversions;
+import scala.collection.JavaConverters;
 import scala.collection.mutable.Seq;
 
 import static java.util.Arrays.asList;
 import static scala.Option.empty;
-import static zipkin.internal.Util.midnightUTC;
 
 public final class FinagleTestObjects {
   public static final long TODAY = midnightUTC(System.currentTimeMillis());
@@ -33,6 +34,16 @@ public final class FinagleTestObjects {
       SpanId.fromString("0f28590523a46541").get(), empty(), Flags$.MODULE$.apply());
 
   public static Seq<String> seq(String... entries) {
-    return JavaConversions.asScalaBuffer(asList(entries));
+    return JavaConverters.asScalaBuffer(asList(entries));
+  }
+
+  static long midnightUTC(long epochMillis) {
+    Calendar day = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    day.setTimeInMillis(epochMillis);
+    day.set(14, 0);
+    day.set(13, 0);
+    day.set(12, 0);
+    day.set(11, 0);
+    return day.getTimeInMillis();
   }
 }
