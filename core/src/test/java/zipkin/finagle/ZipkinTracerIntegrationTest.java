@@ -99,14 +99,16 @@ public abstract class ZipkinTracerIntegrationTest {
         .id(child.spanId().toLong()).build();
 
     assertThat(getTraces()).containsExactly(asList(span1, span2));
-    int expectedMessageSize =
+
+    long expectedSpanBytes = Codec.THRIFT.sizeInBytes(span1) + Codec.THRIFT.sizeInBytes(span2);
+    long expectedMessageSize =
         messageSizeInBytes(asList(Encoder.THRIFT.encode(span1), Encoder.THRIFT.encode(span2)));
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(seq("span_bytes"), Codec.THRIFT.sizeInBytes(span1) + Codec.THRIFT.sizeInBytes(span2)),
-        entry(seq("spans"), 2),
+        entry(seq("span_bytes"), expectedSpanBytes),
+        entry(seq("spans"), 2L),
         entry(seq("message_bytes"), expectedMessageSize),
-        entry(seq("messages"), 1)
+        entry(seq("messages"), 1L)
     );
   }
 }

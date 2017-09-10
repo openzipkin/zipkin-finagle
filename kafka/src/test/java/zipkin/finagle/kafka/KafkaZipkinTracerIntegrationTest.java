@@ -98,13 +98,13 @@ public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTes
     Thread.sleep(1500); // wait for kafka request attempt to go through
 
     assertThat(mapAsJavaMap(stats.counters())).containsOnly(
-        entry(seq("spans"), 1),
-        entry(seq("span_bytes"), 165),
-        entry(seq("spans_dropped"), 1),
-        entry(seq("messages"), 1),
-        entry(seq("message_bytes"), 170),
-        entry(seq("messages_dropped"), 1),
-        entry(seq("messages_dropped", "org.apache.kafka.common.errors.TimeoutException"), 1)
+        entry(seq("spans"), 1L),
+        entry(seq("span_bytes"), 165L),
+        entry(seq("spans_dropped"), 1L),
+        entry(seq("messages"), 1L),
+        entry(seq("message_bytes"), 170L),
+        entry(seq("messages_dropped"), 1L),
+        entry(seq("messages_dropped", "org.apache.kafka.common.errors.TimeoutException"), 1L)
     );
   }
 }

@@ -98,10 +98,10 @@ public class ZipkinTracerTest {
     tracer.reporter.flush();
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(seq("span_bytes"), 165),
-        entry(seq("spans"), 1),
-        entry(seq("message_bytes"), 170),
-        entry(seq("messages"), 1)
+        entry(seq("span_bytes"), 165L),
+        entry(seq("spans"), 1L),
+        entry(seq("message_bytes"), 170L),
+        entry(seq("messages"), 1L)
     );
   }
 
@@ -120,15 +120,15 @@ public class ZipkinTracerTest {
     tracer.reporter.flush();
 
     assertThat(mapAsJavaMap(stats.counters())).containsOnly(
-        entry(seq("spans"), 1),
-        entry(seq("span_bytes"), 165),
-        entry(seq("spans_dropped"), 1),
-        entry(seq("messages"), 1),
-        entry(seq("message_bytes"), 170),
-        entry(seq("messages_dropped"), 1),
-        entry(seq("messages_dropped", "java.lang.IllegalStateException"), 1),
+        entry(seq("spans"), 1L),
+        entry(seq("span_bytes"), 165L),
+        entry(seq("spans_dropped"), 1L),
+        entry(seq("messages"), 1L),
+        entry(seq("message_bytes"), 170L),
+        entry(seq("messages_dropped"), 1L),
+        entry(seq("messages_dropped", "java.lang.IllegalStateException"), 1L),
         entry(seq("messages_dropped", "java.lang.IllegalStateException",
-            "java.lang.NullPointerException"), 1)
+            "java.lang.NullPointerException"), 1L)
     );
   }
 }

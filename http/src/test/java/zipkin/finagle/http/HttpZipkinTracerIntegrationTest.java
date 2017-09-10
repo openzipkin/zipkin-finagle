@@ -59,9 +59,7 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
 
   @Test
   public void whenHttpIsDown() throws Exception {
-    closeTracer();
-    config = config.toBuilder().host("127.0.0.1:65535").build();
-    createTracer();
+    http.shutdown(); // shutdown the normal zipkin rule
 
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), none));
@@ -71,22 +69,22 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
     Thread.sleep(1500); // wait for http request attempt to go through
 
     assertThat(mapAsJavaMap(stats.counters())).containsOnly(
-        entry(seq("spans"), 1),
-        entry(seq("span_bytes"), 165),
-        entry(seq("spans_dropped"), 1),
-        entry(seq("messages"), 1),
-        entry(seq("message_bytes"), 170),
-        entry(seq("messages_dropped"), 1),
-        entry(seq("messages_dropped", "com.twitter.finagle.Failure"), 1),
+        entry(seq("spans"), 1L),
+        entry(seq("span_bytes"), 165L),
+        entry(seq("spans_dropped"), 1L),
+        entry(seq("messages"), 1L),
+        entry(seq("message_bytes"), 170L),
+        entry(seq("messages_dropped"), 1L),
+        entry(seq("messages_dropped", "com.twitter.finagle.Failure"), 1L),
         entry(seq("messages_dropped", "com.twitter.finagle.Failure",
-            "com.twitter.finagle.ConnectionFailedException"), 1),
+            "com.twitter.finagle.ConnectionFailedException"), 1L),
         entry(seq("messages_dropped", "com.twitter.finagle.Failure",
             "com.twitter.finagle.ConnectionFailedException",
-            "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1),
+            "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1L),
         entry(seq("messages_dropped", "com.twitter.finagle.Failure",
             "com.twitter.finagle.ConnectionFailedException",
             "io.netty.channel.AbstractChannel$AnnotatedConnectException",
-            "java.net.ConnectException"), 1)
+            "java.net.ConnectException"), 1L)
     );
   }
 

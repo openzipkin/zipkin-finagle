@@ -102,7 +102,7 @@ public class SpanRecorderTest {
     );
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(seq("record", "unhandled", "java.util.Date"), 1)
+        entry(seq("record", "unhandled", "java.util.Date"), 1L)
     );
   }
 
@@ -117,7 +117,7 @@ public class SpanRecorderTest {
     );
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(seq("record", "unhandled", FancyAnnotation.class.getName()), 1)
+        entry(seq("record", "unhandled", FancyAnnotation.class.getName()), 1L)
     );
   }
 
