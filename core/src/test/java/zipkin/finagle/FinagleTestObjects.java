@@ -34,7 +34,7 @@ public final class FinagleTestObjects {
       SpanId.fromString("0f28590523a46541").get(), empty(), Flags$.MODULE$.apply());
 
   public static Seq<String> seq(String... entries) {
-    return JavaConverters.asScalaBuffer(asList(entries));
+    return JavaConverters.asScalaBufferConverter(asList(entries)).asScala();
   }
 
   static long midnightUTC(long epochMillis) {

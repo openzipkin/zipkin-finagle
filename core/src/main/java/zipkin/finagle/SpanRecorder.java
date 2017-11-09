@@ -29,6 +29,11 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+
+import scala.Function0;
+import scala.Function1;
+import scala.runtime.AbstractFunction0;
+import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
 import zipkin.BinaryAnnotation;
 import zipkin.Span;
@@ -52,10 +57,12 @@ final class SpanRecorder extends AbstractClosable {
   SpanRecorder(Reporter<Span> reporter, StatsReceiver stats, Timer timer) {
     this.reporter = reporter;
     this.unhandledReceiver = stats.scope("record").scope("unhandled");
-    this.flusher = timer.schedule(ttl.$div(2L), () -> {
-      flush(ttl.ago());
-      return null;
-    });
+    Function0<BoxedUnit> f = new AbstractFunction0<BoxedUnit>() {
+      public BoxedUnit apply() {
+        flush(ttl.ago());
+        return null;      }
+    };
+    this.flusher = timer.schedule(ttl.$div(2L), f);
   }
 
   /**

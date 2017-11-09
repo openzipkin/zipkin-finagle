@@ -21,10 +21,13 @@ import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Duration;
 import com.twitter.util.Time;
 import java.util.List;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import scala.Option;
+import scala.collection.Seq;
 import zipkin.Span;
 import zipkin.collector.CollectorMetrics;
 import zipkin.collector.scribe.ScribeCollector;
@@ -35,6 +38,7 @@ import zipkin.reporter.libthrift.InternalScribeCodec;
 import zipkin.storage.InMemoryStorage;
 import zipkin.storage.QueryRequest;
 
+import static jdk.nashorn.internal.objects.Global.println;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.collection.JavaConversions.mapAsJavaMap;
@@ -86,23 +90,20 @@ public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTe
 
     Thread.sleep(1500); // wait for scribe request attempt to go through
 
-    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
-        entry(seq("spans"), 1L),
-        entry(seq("span_bytes"), 165L),
-        entry(seq("spans_dropped"), 1L),
-        entry(seq("messages"), 1L),
-        entry(seq("message_bytes"), 273L),
-        entry(seq("messages_dropped"), 1L),
-        entry(seq("messages_dropped", "com.twitter.finagle.Failure"), 1L),
-        entry(seq("messages_dropped", "com.twitter.finagle.Failure",
-            "com.twitter.finagle.ConnectionFailedException"), 1L),
-        entry(seq("messages_dropped", "com.twitter.finagle.Failure",
+    Map<Seq<String>, Object> map = mapAsJavaMap(stats.counters());
+    assertThat(map.get(seq("spans"))).isEqualTo(1);
+    assertThat(map.get(seq("span_bytes"))).isEqualTo(165);
+    assertThat(map.get(seq("spans_dropped"))).isEqualTo(1);
+    assertThat(map.get(seq("messages"))).isEqualTo(1);
+    assertThat(map.get(seq("message_bytes"))).isEqualTo(273);
+    assertThat(map.get(seq("messages_dropped"))).isEqualTo(1);
+    assertThat(map.get(seq("messages_dropped", "com.twitter.finagle.Failure"))).isEqualTo(1);
+    assertThat(map.get(seq("messages_dropped", "com.twitter.finagle.Failure",
+            "com.twitter.finagle.ConnectionFailedException"))).isEqualTo(1);
+    assertThat(map.get(seq("messages_dropped", "com.twitter.finagle.Failure",
             "com.twitter.finagle.ConnectionFailedException",
-            "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1L),
-        entry(seq("messages_dropped", "com.twitter.finagle.Failure",
-            "com.twitter.finagle.ConnectionFailedException",
-            "io.netty.channel.AbstractChannel$AnnotatedConnectException",
-            "java.net.ConnectException"), 1L)
-    );
+            "java.net.ConnectException"))).isEqualTo(1);
+
+    assertThat(map.size()).isEqualTo(9);
   }
 }

@@ -21,6 +21,7 @@ import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Time;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import scala.collection.Seq;
 import zipkin.Span;
 import zipkin.reporter.AsyncReporter;
 import zipkin.reporter.Sender;
@@ -97,12 +99,13 @@ public class ZipkinTracerTest {
 
     tracer.reporter.flush();
 
-    assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(seq("span_bytes"), 165L),
-        entry(seq("spans"), 1L),
-        entry(seq("message_bytes"), 170L),
-        entry(seq("messages"), 1L)
-    );
+    Map<Seq<String>, Object> map = mapAsJavaMap(stats.counters());
+    assertThat(map.get(seq("spans"))).isEqualTo(1);
+    assertThat(map.get(seq("span_bytes"))).isEqualTo(165);
+    assertThat(map.get(seq("messages"))).isEqualTo(1);
+    assertThat(map.get(seq("message_bytes"))).isEqualTo(170);
+
+    assertThat(map.size()).isEqualTo(4);
   }
 
   @Test
@@ -119,16 +122,16 @@ public class ZipkinTracerTest {
 
     tracer.reporter.flush();
 
-    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
-        entry(seq("spans"), 1L),
-        entry(seq("span_bytes"), 165L),
-        entry(seq("spans_dropped"), 1L),
-        entry(seq("messages"), 1L),
-        entry(seq("message_bytes"), 170L),
-        entry(seq("messages_dropped"), 1L),
-        entry(seq("messages_dropped", "java.lang.IllegalStateException"), 1L),
-        entry(seq("messages_dropped", "java.lang.IllegalStateException",
-            "java.lang.NullPointerException"), 1L)
-    );
+    Map<Seq<String>, Object> map = mapAsJavaMap(stats.counters());
+     assertThat(map.get(seq("spans"))).isEqualTo(1);
+     assertThat(map.get(seq("span_bytes"))).isEqualTo(165);
+     assertThat(map.get(seq("spans_dropped"))).isEqualTo(1);
+     assertThat(map.get(seq("messages"))).isEqualTo(1);
+     assertThat(map.get(seq("message_bytes"))).isEqualTo(170);
+     assertThat(map.get(seq("messages_dropped"))).isEqualTo(1);
+     assertThat(map.get(seq("messages_dropped", "java.lang.IllegalStateException"))).isEqualTo(1);
+     assertThat(map.get(seq("messages_dropped", "java.lang.IllegalStateException",
+             "java.lang.NullPointerException"))).isEqualTo(1);
+     assertThat(map.size()).isEqualTo(8);
   }
 }
