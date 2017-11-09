@@ -4,7 +4,7 @@
 Integration between Finagle tracing to Zipkin transports including http, kafka and scribe.
 
 ## Quick start
-Finagle will use a tracer that it detects in the classpath. For example, depending on `io.zipkin.finagle:zipkin-finagle-http_2.12` will send to Zipkin over Http.
+Finagle will use a tracer that it detects in the classpath. For example, depending on `io.zipkin.finagle:zipkin-finagle-http_2.11` will send to Zipkin over Http.
 
 You can look at the [example](https://github.com/openzipkin/zipkin-finagle-example) for this in use.
 
@@ -46,7 +46,7 @@ Flag | Default | Description
 zipkin.initialSampleRate | 0.001 (0.1%) | Percentage of traces to sample (report to zipkin) in the range [0.0 - 1.0]
 
 ### Http Configuration
-Adding `io.zipkin.finagle:zipkin-finagle-http_2.12` to your classpath will configure Finagle
+Adding `io.zipkin.finagle:zipkin-finagle-http_2.11` to your classpath will configure Finagle
 to report trace data to a Zipkin server via HTTP.
 
 Here are the flags that apply to Http:
@@ -63,7 +63,7 @@ $ java -Dzipkin.http.host=192.168.99.100:9411 ...
 ```
 
 ### Kafka Configuration
-Adding `io.zipkin.finagle:zipkin-finagle-kafka_2.12` to your classpath will configure Finagle
+Adding `io.zipkin.finagle:zipkin-finagle-kafka_2.11` to your classpath will configure Finagle
 to report trace data to a Kafka topic. The minimum Kafka server version is 0.8.2.2
 
 Here are the flags that apply to Kafka:
@@ -79,7 +79,7 @@ $ java -Dzipkin.kafka.bootstrapServers=192.168.99.100 ...
 ```
 
 ### Scribe Configuration
-Adding `io.zipkin.finagle:zipkin-finagle-scribe_2.12` to your classpath will configure Finagle
+Adding `io.zipkin.finagle:zipkin-finagle-scribe_2.11` to your classpath will configure Finagle
 to report trace data to the zipkin category of Scribe.
 
 Here are the flags that apply to Scribe:

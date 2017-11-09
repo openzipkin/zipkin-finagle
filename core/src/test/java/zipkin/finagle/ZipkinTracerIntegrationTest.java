@@ -21,11 +21,14 @@ import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Time;
 import java.util.List;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import scala.collection.Seq;
 import zipkin.Annotation;
 import zipkin.Codec;
 import zipkin.Endpoint;
@@ -100,15 +103,16 @@ public abstract class ZipkinTracerIntegrationTest {
 
     assertThat(getTraces()).containsExactly(asList(span1, span2));
 
-    long expectedSpanBytes = Codec.THRIFT.sizeInBytes(span1) + Codec.THRIFT.sizeInBytes(span2);
-    long expectedMessageSize =
+    int expectedSpanBytes = Codec.THRIFT.sizeInBytes(span1) + Codec.THRIFT.sizeInBytes(span2);
+    int expectedMessageSize =
         messageSizeInBytes(asList(Encoder.THRIFT.encode(span1), Encoder.THRIFT.encode(span2)));
 
-    assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(seq("span_bytes"), expectedSpanBytes),
-        entry(seq("spans"), 2L),
-        entry(seq("message_bytes"), expectedMessageSize),
-        entry(seq("messages"), 1L)
-    );
+    Map<Seq<String>, Object> map = mapAsJavaMap(stats.counters());
+    assertThat(map.get(seq("spans"))).isEqualTo(2);
+    assertThat(map.get(seq("span_bytes"))).isEqualTo(expectedSpanBytes);
+    assertThat(map.get(seq("messages"))).isEqualTo(1);
+    assertThat(map.get(seq("message_bytes"))).isEqualTo(expectedMessageSize);
+
+    assertThat(map.size()).isEqualTo(4);
   }
 }

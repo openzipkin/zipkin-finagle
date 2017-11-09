@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <artifactId>zipkin-finagle-parent_2.12</artifactId>
+    <artifactId>zipkin-finagle-parent_2.11</artifactId>
     <groupId>io.zipkin.finagle</groupId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>zipkin-finagle-scribe_2.12</artifactId>
+  <artifactId>zipkin-finagle-scribe_2.11</artifactId>
   <name>Zipkin Finagle: Scribe</name>
   <build>
     <plugins>
@@ -52,20 +52,20 @@
   <dependencies>
     <dependency>
       <groupId>io.zipkin.finagle</groupId>
-      <artifactId>zipkin-finagle_2.12</artifactId>
-      <version>1.1.0-SNAPSHOT</version>
+      <artifactId>zipkin-finagle_2.11</artifactId>
+      <version>1.1.1-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.twitter</groupId>
-      <artifactId>finagle-thrift_2.12</artifactId>
-      <version>7.1.0</version>
+      <artifactId>finagle-thrift_2.11</artifactId>
+      <version>6.45.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>io.zipkin.finagle</groupId>
-      <artifactId>zipkin-finagle_2.12</artifactId>
-      <version>1.1.0-SNAPSHOT</version>
+      <artifactId>zipkin-finagle_2.11</artifactId>
+      <version>1.1.1-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>compile</scope>
     </dependency>
@@ -87,8 +87,8 @@
     </dependency>
     <dependency>
       <groupId>com.twitter</groupId>
-      <artifactId>finagle-zipkin-core_2.12</artifactId>
-      <version>7.1.0</version>
+      <artifactId>finagle-zipkin-core_2.11</artifactId>
+      <version>6.45.0</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
