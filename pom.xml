@@ -45,8 +45,8 @@
 
     <!-- version numbers that are used more than once -->
     <scala.binary.version>2.12</scala.binary.version>
-    <finagle.version>17.11.0</finagle.version>
-    <zipkin.version>2.3.1</zipkin.version>
+    <finagle.version>17.12.0</finagle.version>
+    <zipkin.version>2.4.1</zipkin.version>
     <zipkin-reporter.version>1.1.2</zipkin-reporter.version>
     <license-maven-plugin.version>2.11</license-maven-plugin.version>
   </properties>
@@ -199,6 +199,10 @@
         <inherited>true</inherited>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.7.0</version>
+        <configuration>
+          <!-- or die! com.sun.tools.javac.api.JavacTool -->
+          <fork>true</fork>
+        </configuration>
         <executions>
           <!-- Ensure main source tree compiles to Java ${main.java.version} bytecode. -->
           <execution>
