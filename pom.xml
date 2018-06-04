@@ -46,7 +46,7 @@
     <!-- version numbers that are used more than once -->
     <scala.binary.version>2.12</scala.binary.version>
     <finagle.version>18.5.0</finagle.version>
-    <zipkin.version>2.7.1</zipkin.version>
+    <zipkin.version>2.8.4</zipkin.version>
     <zipkin-reporter.version>1.1.2</zipkin-reporter.version>
     <license-maven-plugin.version>2.11</license-maven-plugin.version>
   </properties>
@@ -181,11 +181,11 @@
   <build>
     <pluginManagement>
       <plugins>
-        <!-- mvn -N io.takari:maven:wrapper -Dmaven=3.5.0 -->
+        <!-- mvn -N io.takari:maven:wrapper -Dmaven=3.5.3 -->
         <plugin>
           <groupId>io.takari</groupId>
           <artifactId>maven</artifactId>
-          <version>0.5.0</version>
+          <version>0.6.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-shade-plugin</artifactId>
@@ -198,6 +198,10 @@
           <version>${license-maven-plugin.version}</version>
           <configuration>
             <header>${main.basedir}/src/etc/header.txt</header>
+            <mapping>
+              <!-- Don't use javadoc style as this makes code formatters break it by adding tags! -->
+              <java>SLASHSTAR_STYLE</java>
+            </mapping>
             <excludes>
               <exclude>.travis.yml</exclude>
               <exclude>.gitignore</exclude>
