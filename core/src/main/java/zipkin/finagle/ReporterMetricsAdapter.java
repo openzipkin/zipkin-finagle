@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 The OpenZipkin Authors
+ * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,12 +13,12 @@
  */
 package zipkin.finagle;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import com.twitter.finagle.stats.Counter;
 import com.twitter.finagle.stats.StatsReceiver;
 import com.twitter.finagle.stats.StatsReceivers;
 import com.twitter.util.Throwables;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
 import scala.collection.Iterator;
 import scala.collection.Seq;
 import scala.collection.Traversable;
@@ -32,8 +32,8 @@ final class ReporterMetricsAdapter implements ReporterMetrics {
   final Counter messages;
   final Counter messageBytes;
   final StatsReceiver messagesDropped;
-  final AtomicDouble spanQueueSize;
-  final AtomicDouble spanQueueBytes;
+  final AtomicLong spanQueueSize;
+  final AtomicLong spanQueueBytes;
 
   ReporterMetricsAdapter(StatsReceiver stats) {
     this.spans = stats.counter0("spans");
@@ -81,8 +81,8 @@ final class ReporterMetricsAdapter implements ReporterMetrics {
     spanQueueBytes.set(i);
   }
 
-  static AtomicDouble gaugeFor(StatsReceiver stats, String scope) {
-    final AtomicDouble result = new AtomicDouble();
+  static AtomicLong gaugeFor(StatsReceiver stats, String scope) {
+    final AtomicLong result = new AtomicLong();
     StatsReceivers.addGauge(stats, new Callable<Float>() {
       @Override public Float call() throws Exception {
         return result.floatValue();
