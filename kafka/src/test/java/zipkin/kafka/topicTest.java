@@ -25,7 +25,7 @@ import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static scala.collection.JavaConversions.asJavaCollection;
+import static scala.collection.JavaConverters.asJavaCollection;
 
 public class topicTest {
 
