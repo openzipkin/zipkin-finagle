@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import scala.Function0;
 import scala.Option;
@@ -29,7 +28,7 @@ import scala.runtime.BoxedUnit;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static scala.collection.JavaConversions.asJavaCollection;
+import static scala.collection.JavaConverters.asJavaCollection;
 
 public class bootstrapServersTest {
 

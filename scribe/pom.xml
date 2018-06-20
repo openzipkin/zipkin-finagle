@@ -18,9 +18,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.zipkin.finagle</groupId>
+    <groupId>io.zipkin.finagle2</groupId>
     <artifactId>zipkin-finagle-parent_2.12</artifactId>
-    <version>1.2.8-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>zipkin-finagle-scribe_2.12</artifactId>
@@ -43,21 +43,21 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zipkin.reporter</groupId>
+      <groupId>io.zipkin.reporter2</groupId>
       <artifactId>zipkin-sender-libthrift</artifactId>
-      <version>${zipkin-reporter.version}</version>
     </dependency>
 
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-finagle_${scala.binary.version}</artifactId>
       <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zipkin.java</groupId>
+      <groupId>io.zipkin.zipkin2</groupId>
       <artifactId>zipkin-collector-scribe</artifactId>
-      <version>${zipkin.version}</version>
+      <version>2.9.4</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -74,24 +74,24 @@
             </goals>
             <configuration>
               <minimizeJar>true</minimizeJar>
-              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
               <relocations>
                 <relocation>
-                  <pattern>zipkin.reporter.libthrift</pattern>
-                  <shadedPattern>zipkin.finagle.scribe.internal</shadedPattern>
+                  <pattern>zipkin2.reporter.libthrift</pattern>
+                  <shadedPattern>zipkin.finagle2.scribe.internal</shadedPattern>
                 </relocation>
               </relocations>
               <artifactSet>
                 <includes>
-                  <include>io.zipkin.reporter:zipkin-sender-libthrift</include>
+                  <include>io.zipkin.reporter2:zipkin-sender-libthrift</include>
                 </includes>
               </artifactSet>
               <filters>
                 <filter>
                   <!-- Shade references so there's no dependency on zipkin-sender-libthrift -->
-                  <artifact>io.zipkin.reporter:zipkin-sender-libthrift</artifact>
+                  <artifact>io.zipkin.reporter2:zipkin-sender-libthrift</artifact>
                   <includes>
-                    <include>zipkin/reporter/libthrift/InternalScribeCodec.class</include>
+                    <include>zipkin2/reporter/libthrift/InternalScribeCodec.class</include>
                   </includes>
                   <excludes>
                     <exclude>*</exclude>
