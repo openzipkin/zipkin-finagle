@@ -22,6 +22,7 @@ import com.twitter.finagle.tracing.Flags$;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.finagle.tracing.SpanId;
 import com.twitter.finagle.tracing.TraceId;
+import com.twitter.finagle.tracing.TraceId$;
 import com.twitter.finagle.tracing.traceId128Bit$;
 import com.twitter.util.Time;
 import java.util.List;
@@ -94,13 +95,14 @@ public class ZipkinTracerTest {
 
   /** See {@link traceId128Bit$} */
   @Test public void traceId128Bit() throws Exception {
-    TraceId root = new TraceId(
+      TraceId root = TraceId$.MODULE$.apply(
         SpanId.fromString("0f28590523a46541"),
         empty(),
         SpanId.fromString("0f28590523a46541").get(),
         empty(),
         Flags$.MODULE$.apply(),
-        SpanId.fromString("d2f9288a2904503d")
+        SpanId.fromString("d2f9288a2904503d"),
+        false
     );
 
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
