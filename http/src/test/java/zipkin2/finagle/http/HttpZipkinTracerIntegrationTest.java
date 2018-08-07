@@ -13,8 +13,8 @@
  */
 package zipkin2.finagle.http;
 
-import com.twitter.finagle.tracing.Annotation.ClientRecv;
-import com.twitter.finagle.tracing.Annotation.ClientSend;
+import com.twitter.finagle.tracing.Annotation.ClientRecv$;
+import com.twitter.finagle.tracing.Annotation.ClientSend$;
 import com.twitter.finagle.tracing.Annotation.Rpc;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
@@ -61,9 +61,9 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
 
     tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), none));
     tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), none));
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ClientSend(), none));
+    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), ClientSend$.MODULE$, none));
     tracer.record(new Record(
-        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), new ClientRecv(), none));
+        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ClientRecv$.MODULE$, none));
 
     Thread.sleep(1500); // wait for http request attempt to go through
 
@@ -94,8 +94,8 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
     List<Record> records = asList(
         new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), none),
         new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), none),
-        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ClientSend(), none),
-        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), new ClientRecv(), none)
+        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), ClientSend$.MODULE$, none),
+        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ClientRecv$.MODULE$, none)
     );
 
     MockWebServer server = new MockWebServer();

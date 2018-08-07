@@ -63,7 +63,7 @@ public class SpanRecorderTest {
     advanceAndRecord(4, root, new Annotation.BinaryAnnotation("http.uri", "/"));
     advanceAndRecord(15, root, new Annotation.ServiceName("frontend"));
     advanceAndRecord(0, root, new Annotation.BinaryAnnotation("srv/finagle.version", "6.36.0"));
-    advanceAndRecord(0, root, new Annotation.ServerRecv());
+    advanceAndRecord(0, root, Annotation.ServerRecv$.MODULE$);
     advanceAndRecord(1, root, new Annotation.LocalAddr(socketAddr("127.0.0.1", 8081)));
     advanceAndRecord(1, root, new Annotation.ServerAddr(socketAddr("127.0.0.1", 8081)));
     advanceAndRecord(1, root, new Annotation.ClientAddr(socketAddr("127.0.0.1", 58624)));
@@ -73,15 +73,15 @@ public class SpanRecorderTest {
     advanceAndRecord(0, child, new Annotation.BinaryAnnotation("http.uri", "/api"));
     advanceAndRecord(0, child, new Annotation.ServiceName("frontend"));
     advanceAndRecord(0, child, new Annotation.BinaryAnnotation("clnt/finagle.version", "6.36.0"));
-    advanceAndRecord(0, child, new Annotation.ClientSend());
+    advanceAndRecord(0, child, Annotation.ClientSend$.MODULE$);
     advanceAndRecord(46, child, Annotation.WireSend$.MODULE$);
     advanceAndRecord(7, child, new Annotation.ServerAddr(socketAddr("127.0.0.1", 9000)));
     advanceAndRecord(1, child, new Annotation.ClientAddr(socketAddr("127.0.0.1", 58627)));
     advanceAndRecord(178, child, Annotation.WireRecv$.MODULE$);
-    advanceAndRecord(2, child, new Annotation.ClientRecv());
+    advanceAndRecord(2, child, Annotation.ClientRecv$.MODULE$);
 
     // Finishing the server span
-    advanceAndRecord(40, root, new Annotation.ServerSend());
+    advanceAndRecord(40, root, Annotation.ServerSend$.MODULE$);
 
     Span clientSide = spansSent.take();
     Span serverSide = spansSent.take();
@@ -107,7 +107,7 @@ public class SpanRecorderTest {
   }
 
   /** Better to drop instead of crash on expected new Annotation types */
-  class FancyAnnotation implements Annotation {
+  class FancyAnnotation extends Annotation {
 
   }
 
@@ -122,8 +122,8 @@ public class SpanRecorderTest {
   }
 
   @Test public void reportsSpanOn_ClientRecv() throws Exception {
-    advanceAndRecord(0, root, new Annotation.ClientSend());
-    advanceAndRecord(1, root, new Annotation.ClientRecv());
+    advanceAndRecord(0, root, Annotation.ClientSend$.MODULE$);
+    advanceAndRecord(1, root, Annotation.ClientRecv$.MODULE$);
 
     Span span = spansSent.take();
     assertThat(span.kind()).isEqualTo(Span.Kind.CLIENT);
@@ -133,7 +133,7 @@ public class SpanRecorderTest {
   }
 
   @Test public void reportsSpanOn_Timeout() throws Exception {
-    advanceAndRecord(0, root, new Annotation.ClientSend());
+    advanceAndRecord(0, root, Annotation.ClientSend$.MODULE$);
     advanceAndRecord(1, root, new Annotation.Message(TimeoutFilter.TimeoutAnnotation()));
 
     Span span = spansSent.take();
@@ -146,8 +146,8 @@ public class SpanRecorderTest {
   }
 
   @Test public void reportsSpanOn_ServerSend() throws Exception {
-    advanceAndRecord(0, root, new Annotation.ServerRecv());
-    advanceAndRecord(1, root, new Annotation.ServerSend());
+    advanceAndRecord(0, root, Annotation.ServerRecv$.MODULE$);
+    advanceAndRecord(1, root, Annotation.ServerSend$.MODULE$);
 
     Span span = spansSent.take();
     assertThat(span.kind()).isEqualTo(Span.Kind.SERVER);
@@ -159,9 +159,9 @@ public class SpanRecorderTest {
   /** ServiceName can be set late, but it should be consistent across annotations. */
   @Test public void serviceNameAppliesRetroactively() throws Exception {
     advanceAndRecord(0, root, new Annotation.Rpc("GET"));
-    advanceAndRecord(0, root, new Annotation.ServerRecv());
+    advanceAndRecord(0, root, Annotation.ServerRecv$.MODULE$);
     advanceAndRecord(0, root, new Annotation.ServiceName("frontend"));
-    advanceAndRecord(15, root, new Annotation.ServerSend());
+    advanceAndRecord(15, root, Annotation.ServerSend$.MODULE$);
 
     Span span = spansSent.take();
     assertThat(span.localServiceName()).isEqualTo("frontend");
@@ -170,7 +170,7 @@ public class SpanRecorderTest {
   @Test public void flushesIncompleteSpans() throws Exception {
     advanceAndRecord(0, root, new Annotation.Rpc("GET"));
     advanceAndRecord(15, root, new Annotation.ServiceName("frontend"));
-    advanceAndRecord(0, root, new Annotation.ServerRecv());
+    advanceAndRecord(0, root, Annotation.ServerRecv$.MODULE$);
     // Note: there's no ServerSend() which would complete the span.
 
     time.advance(recorder.ttl.plus(Duration.fromMilliseconds(1))); // advance timer

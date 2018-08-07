@@ -85,29 +85,29 @@ final class SpanRecorder extends AbstractClosable {
       String error = ((Annotation.WireRecvError) annotation).error();
       span.addAnnotation(record.timestamp(),
           String.format(ERROR_FORMAT, "Wire Receive Error", error));
-    } else if ((annotation instanceof Annotation.ClientSend)) {
+    } else if ((Annotation.ClientSend$.MODULE$.equals(annotation))) {
       span.addAnnotation(record.timestamp(), "cs");
-    } else if ((annotation instanceof Annotation.ClientRecv)) {
+    } else if ((Annotation.ClientRecv$.MODULE$.equals(annotation))) {
       span.addAnnotation(record.timestamp(), "cr");
     } else if ((annotation instanceof Annotation.ClientRecvError)) {
       String error = ((Annotation.ClientRecvError) annotation).error();
       span.addAnnotation(record.timestamp(),
           String.format(ERROR_FORMAT, "Client Receive Error", error));
-    } else if ((annotation instanceof Annotation.ServerSend)) {
+    } else if ((Annotation.ServerSend$.MODULE$.equals(annotation))) {
       span.addAnnotation(record.timestamp(), "ss");
-    } else if ((annotation instanceof Annotation.ServerRecv)) {
+    } else if ((Annotation.ServerRecv$.MODULE$.equals(annotation))) {
       span.addAnnotation(record.timestamp(), "sr");
     } else if ((annotation instanceof Annotation.ServerSendError)) {
       String error = ((Annotation.ServerSendError) annotation).error();
       span.addAnnotation(record.timestamp(),
           String.format(ERROR_FORMAT, "Server Send Error", error));
-    } else if ((annotation instanceof Annotation.ClientSendFragment)) {
+    } else if ((Annotation.ClientSendFragment$.MODULE$.equals(annotation))) {
       span.addAnnotation(record.timestamp(), "csf");
-    } else if ((annotation instanceof Annotation.ClientRecvFragment)) {
+    } else if ((Annotation.ClientRecvFragment$.MODULE$.equals(annotation))) {
       span.addAnnotation(record.timestamp(), "crf");
-    } else if ((annotation instanceof Annotation.ServerSendFragment)) {
+    } else if ((Annotation.ServerSendFragment$.MODULE$.equals(annotation))) {
       span.addAnnotation(record.timestamp(), "ssf");
-    } else if ((annotation instanceof Annotation.ServerRecvFragment)) {
+    } else if ((Annotation.ServerRecvFragment$.MODULE$.equals(annotation))) {
       span.addAnnotation(record.timestamp(), "srf");
     } else if ((annotation instanceof Annotation.Message)) {
       String value = ((Annotation.Message) annotation).content();

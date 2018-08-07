@@ -14,8 +14,8 @@
 package zipkin2.finagle;
 
 import com.twitter.finagle.stats.InMemoryStatsReceiver;
-import com.twitter.finagle.tracing.Annotation.ClientRecv;
-import com.twitter.finagle.tracing.Annotation.ClientSend;
+import com.twitter.finagle.tracing.Annotation.ClientRecv$;
+import com.twitter.finagle.tracing.Annotation.ClientSend$;
 import com.twitter.finagle.tracing.Annotation.Rpc;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Flags$;
@@ -71,7 +71,7 @@ public class ZipkinTracerTest {
   @Test public void unfinishedSpansArentImplicitlyReported() throws Exception {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
 
     tracer.reporter.flush();
 
@@ -81,10 +81,10 @@ public class ZipkinTracerTest {
   @Test public void finishedSpansAreImplicitlyReported() throws Exception {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
 
     // client receive reports the span
-    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     tracer.reporter.flush();
 
@@ -107,10 +107,10 @@ public class ZipkinTracerTest {
 
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
 
     // client receive reports the span
-    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     tracer.reporter.flush();
 
@@ -123,8 +123,8 @@ public class ZipkinTracerTest {
   public void reportIncrementsAcceptedMetrics() throws Exception {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
-    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     tracer.reporter.flush();
 
@@ -145,8 +145,8 @@ public class ZipkinTracerTest {
 
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ClientSend(), empty()));
-    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), new ClientRecv(), empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     try {
       tracer.reporter.flush();

@@ -14,11 +14,11 @@
 package zipkin2.finagle;
 
 import com.twitter.finagle.stats.InMemoryStatsReceiver;
-import com.twitter.finagle.tracing.Annotation.ClientRecv;
-import com.twitter.finagle.tracing.Annotation.ClientSend;
+import com.twitter.finagle.tracing.Annotation.ClientRecv$;
+import com.twitter.finagle.tracing.Annotation.ClientSend$;
 import com.twitter.finagle.tracing.Annotation.Rpc;
-import com.twitter.finagle.tracing.Annotation.ServerRecv;
-import com.twitter.finagle.tracing.Annotation.ServerSend;
+import com.twitter.finagle.tracing.Annotation.ServerRecv$;
+import com.twitter.finagle.tracing.Annotation.ServerSend$;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Time;
@@ -71,18 +71,18 @@ public abstract class ZipkinTracerIntegrationTest {
   @Test public void multipleSpansGoIntoSameMessage() throws Exception {
     tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServerRecv(), empty()));
+    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), ServerRecv$.MODULE$, empty()));
     tracer.record(new Record(
-        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), new ServerSend(), empty()));
+        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ServerSend$.MODULE$, empty()));
 
     tracer.record(new Record(
         FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(
         FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), empty()));
     tracer.record(new Record(
-        FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ClientSend(), empty()));
+                      FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY), ClientSend$.MODULE$, empty()));
     tracer.record(new Record(
-        FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), new ClientRecv(), empty()));
+        FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     Thread.sleep(2000); // the AsyncReporter thread has a default interval of 1s
 
