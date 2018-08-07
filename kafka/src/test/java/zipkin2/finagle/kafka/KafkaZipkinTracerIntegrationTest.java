@@ -15,8 +15,8 @@ package zipkin2.finagle.kafka;
 
 import com.github.charithe.kafka.EphemeralKafkaBroker;
 import com.github.charithe.kafka.KafkaJunitRule;
-import com.twitter.finagle.tracing.Annotation.ClientRecv;
-import com.twitter.finagle.tracing.Annotation.ClientSend;
+import com.twitter.finagle.tracing.Annotation.ClientRecv$;
+import com.twitter.finagle.tracing.Annotation.ClientSend$;
 import com.twitter.finagle.tracing.Annotation.Rpc;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
@@ -89,9 +89,9 @@ public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTes
 
     tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), none));
     tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), none));
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ClientSend(), none));
+    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), ClientSend$.MODULE$, none));
     tracer.record(new Record(
-        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), new ClientRecv(), none));
+        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ClientRecv$.MODULE$, none));
 
     Thread.sleep(1500); // wait for kafka request attempt to go through
 
