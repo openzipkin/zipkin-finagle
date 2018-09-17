@@ -112,6 +112,7 @@ public abstract class ZipkinTracerIntegrationTest {
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
         entry(FinagleTestObjects.seq("span_bytes"), expectedSpanBytes),
         entry(FinagleTestObjects.seq("spans"), 2L),
+        entry(FinagleTestObjects.seq("spans_dropped"), 0L),
         entry(FinagleTestObjects.seq("message_bytes"), expectedMessageSize),
         entry(FinagleTestObjects.seq("messages"), 1L)
     );

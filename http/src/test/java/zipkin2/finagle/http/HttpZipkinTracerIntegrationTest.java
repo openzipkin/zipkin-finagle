@@ -83,7 +83,7 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
         entry(FinagleTestObjects.seq("messages_dropped", "com.twitter.finagle.Failure",
             "com.twitter.finagle.ConnectionFailedException",
             "io.netty.channel.AbstractChannel$AnnotatedConnectException",
-            "java.net.ConnectException"), 1L)
+            "io.netty.channel.unix.Errors$NativeConnectException"), 1L)
     );
   }
 

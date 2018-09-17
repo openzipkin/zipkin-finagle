@@ -131,6 +131,7 @@ public class ZipkinTracerTest {
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
         entry(seq("span_bytes"), 165L),
         entry(seq("spans"), 1L),
+        entry(seq("spans_dropped"),0L),
         entry(seq("message_bytes"), 170L),
         entry(seq("messages"), 1L)
     );
