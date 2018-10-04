@@ -114,7 +114,7 @@ public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTe
                     "com.twitter.finagle.Failure",
                     "com.twitter.finagle.ConnectionFailedException",
                     "io.netty.channel.AbstractChannel$AnnotatedConnectException",
-                    "io.netty.channel.unix.Errors$NativeConnectException"),
+                    "java.net.ConnectException"),
                 1L));
   }
 }
