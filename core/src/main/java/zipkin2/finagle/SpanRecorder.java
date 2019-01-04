@@ -27,6 +27,7 @@ import com.twitter.util.TimerTask;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+// import static scala.compat.java8.JFunction.func;
 import scala.runtime.BoxedUnit;
 import zipkin2.reporter.Reporter;
 import zipkin2.v1.V1SpanConverter;
@@ -46,10 +47,13 @@ final class SpanRecorder extends AbstractClosable {
   SpanRecorder(Reporter<zipkin2.Span> reporter, StatsReceiver stats, Timer timer) {
     this.reporter = reporter;
     this.unhandledReceiver = stats.scope("record").scope("unhandled");
-    this.flusher = timer.schedule(ttl.$div(2L), () -> {
-      flush(ttl.ago());
-      return null;
-    });
+    this.flusher = null;
+    // this.flusher = timer.schedule(
+    //     ttl.$div(2L),
+    //     () -> {
+    //         flush(ttl.ago());
+    //         return null;
+    //     });
   }
 
   /**

@@ -36,7 +36,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.Option.empty;
-import static scala.collection.JavaConverters.mapAsJavaMap;
+import static scala.collection.JavaConverters.mapAsJavaMapConverter;
 
 public abstract class ZipkinTracerIntegrationTest {
   @Rule
@@ -109,7 +109,7 @@ public abstract class ZipkinTracerIntegrationTest {
     long expectedMessageSize =
         messageSizeInBytes(asList(encoder().encode(span1), encoder().encode(span2)));
 
-    assertThat(mapAsJavaMap(stats.counters())).containsExactly(
+    assertThat(mapAsJavaMapConverter(stats.counters()).asJava()).containsExactly(
         entry(FinagleTestObjects.seq("span_bytes"), expectedSpanBytes),
         entry(FinagleTestObjects.seq("spans"), 2L),
         entry(FinagleTestObjects.seq("spans_dropped"), 0L),

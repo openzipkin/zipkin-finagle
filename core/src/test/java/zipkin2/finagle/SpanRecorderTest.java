@@ -33,7 +33,7 @@ import zipkin2.Span;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.Option.empty;
-import static scala.collection.JavaConverters.mapAsJavaMap;
+import static scala.collection.JavaConverters.mapAsJavaMapConverter;
 import static zipkin2.finagle.FinagleTestObjects.TODAY;
 import static zipkin2.finagle.FinagleTestObjects.child;
 import static zipkin2.finagle.FinagleTestObjects.root;
@@ -101,7 +101,7 @@ public class SpanRecorderTest {
             new Annotation.BinaryAnnotation("web", new Date()), empty())
     );
 
-    assertThat(mapAsJavaMap(stats.counters())).containsExactly(
+    assertThat(mapAsJavaMapConverter(stats.counters()).asJava()).containsExactly(
         entry(seq("record", "unhandled", "java.util.Date"), 1L)
     );
   }
@@ -116,7 +116,7 @@ public class SpanRecorderTest {
         new Record(root, Time.fromMilliseconds(TODAY), new FancyAnnotation(), empty())
     );
 
-    assertThat(mapAsJavaMap(stats.counters())).containsExactly(
+    assertThat(mapAsJavaMapConverter(stats.counters()).asJava()).containsExactly(
         entry(seq("record", "unhandled", FancyAnnotation.class.getName()), 1L)
     );
   }

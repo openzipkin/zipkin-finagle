@@ -140,6 +140,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.scala-lang.modules</groupId>
+      <artifactId>scala-java8-compat_${scala.binary.version}</artifactId>
+      <version>0.9.0</version>
+    </dependency>
+
+    <dependency>
       <groupId>io.zipkin.zipkin2</groupId>
       <artifactId>zipkin</artifactId>
     </dependency>
