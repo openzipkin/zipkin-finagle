@@ -25,7 +25,7 @@ import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static scala.collection.JavaConverters.asJavaCollection;
+import static scala.collection.JavaConverters.asJavaCollectionConverter;
 
 public class topicTest {
 
@@ -63,6 +63,6 @@ public class topicTest {
   }
 
   Collection<Flag<?>> globalFlags() {
-    return asJavaCollection(GlobalFlag$.MODULE$.getAll(getClass().getClassLoader()));
+    return asJavaCollection(GlobalFlag$.MODULE$.getAll(getClass().getClassLoader())).asJavaCollection();
   }
 }
