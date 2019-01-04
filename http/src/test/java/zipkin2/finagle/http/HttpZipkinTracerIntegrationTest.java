@@ -37,7 +37,7 @@ import zipkin2.junit.ZipkinRule;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static scala.collection.JavaConverters.mapAsJavaMap;
+import static scala.collection.JavaConverters.mapAsJavaMapConverter;
 
 public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest {
   final Option<Duration> none = Option.empty(); // avoid having to force generics
@@ -67,7 +67,7 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
 
     Thread.sleep(1500); // wait for http request attempt to go through
 
-    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
+    assertThat(mapAsJavaMapConverter(stats.counters()).asJava()).containsOnly(
         entry(FinagleTestObjects.seq("spans"), 1L),
         entry(FinagleTestObjects.seq("span_bytes"), 185L),
         entry(FinagleTestObjects.seq("spans_dropped"), 1L),

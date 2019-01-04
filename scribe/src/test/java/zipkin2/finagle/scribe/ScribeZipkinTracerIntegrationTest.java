@@ -35,7 +35,7 @@ import zipkin2.storage.InMemoryStorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static scala.collection.JavaConverters.mapAsJavaMap;
+import static scala.collection.JavaConverters.mapAsJavaMapConverter;
 import static zipkin2.finagle.FinagleTestObjects.TODAY;
 import static zipkin2.finagle.FinagleTestObjects.root;
 import static zipkin2.finagle.FinagleTestObjects.seq;
@@ -86,7 +86,7 @@ public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTe
 
     Thread.sleep(1500); // wait for scribe request attempt to go through
 
-    assertThat(mapAsJavaMap(stats.counters()))
+    assertThat(mapAsJavaMapConverter(stats.counters()).asJava())
         .containsOnly(
             entry(seq("spans"), 1L),
             entry(seq("span_bytes"), 165L),
