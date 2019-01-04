@@ -18,7 +18,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.zipkin.finagle2</groupId>
-  <artifactId>zipkin-finagle-parent_2.12</artifactId>
+  <artifactId>zipkin-finagle-parent_2.11</artifactId>
   <version>2.0.9-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -44,7 +44,7 @@
     <main.basedir>${project.basedir}</main.basedir>
 
     <!-- version numbers that are used more than once -->
-    <scala.binary.version>2.12</scala.binary.version>
+    <scala.binary.version>2.11</scala.binary.version>
     <finagle.version>18.12.0</finagle.version>
     <zipkin-reporter.version>2.7.10</zipkin-reporter.version>
     <license-maven-plugin.version>2.11</license-maven-plugin.version>
