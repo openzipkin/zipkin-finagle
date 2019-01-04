@@ -63,6 +63,6 @@ public class topicTest {
   }
 
   Collection<Flag<?>> globalFlags() {
-    return asJavaCollection(GlobalFlag$.MODULE$.getAll(getClass().getClassLoader())).asJavaCollection();
+    return asJavaCollectionConverter(GlobalFlag$.MODULE$.getAll(getClass().getClassLoader())).asJavaCollection();
   }
 }
