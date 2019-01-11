@@ -32,6 +32,9 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
+    <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <main.basedir>${project.basedir}</main.basedir>
 
     <!-- default bytecode version for src/main -->
     <main.java.version>1.8</main.java.version>
@@ -41,12 +44,18 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
 
-    <main.basedir>${project.basedir}</main.basedir>
+    <!-- override to set exclusions per-project: default to ignore warnings about flag naming -->
+    <errorprone.args>-Xep:VariableNameSameAsType:OFF</errorprone.args>
+    <errorprone.version>2.3.2</errorprone.version>
 
     <!-- version numbers that are used more than once -->
     <scala.binary.version>2.12</scala.binary.version>
     <finagle.version>19.1.0</finagle.version>
-    <zipkin-reporter.version>2.7.10</zipkin-reporter.version>
+    <log4j.version>2.11.1</log4j.version>
+    <auto-value.version>1.6.3</auto-value.version>
+    <zipkin-reporter.version>2.7.13</zipkin-reporter.version>
+
+    <maven-failsafe-plugin.version>3.0.0-M3</maven-failsafe-plugin.version>
     <license-maven-plugin.version>2.11</license-maven-plugin.version>
   </properties>
 
@@ -123,6 +132,39 @@
         <type>test-jar</type>
         <version>${project.version}</version>
       </dependency>
+
+      <!-- hard-set all the logger versions -->
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.25</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-jul</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${log4j.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-1.2-api</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -149,11 +191,15 @@
       <artifactId>zipkin-reporter</artifactId>
     </dependency>
 
-    <!-- don't worry. auto-* are source retention, not runtime -->
+    <dependency>
+      <groupId>com.google.auto.value</groupId>
+      <artifactId>auto-value-annotations</artifactId>
+      <version>${auto-value.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.google.auto.value</groupId>
       <artifactId>auto-value</artifactId>
-      <version>1.5.3</version>
+      <version>${auto-value.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -172,13 +218,32 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.9.0</version>
+      <version>3.11.1</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- Main code uses jul and tests log with log4j -->
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.2.3</version>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- route jul over log4j2 during tests -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jul</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- route log4j over log4j2 during tests -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-1.2-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- route slf4j over log4j2 during tests -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -186,16 +251,60 @@
   <build>
     <pluginManagement>
       <plugins>
-        <!-- mvn -N io.takari:maven:wrapper -Dmaven=3.5.3 -->
+        <!-- mvn -N io.takari:maven:wrapper -Dmaven=3.6.0 -->
         <plugin>
           <groupId>io.takari</groupId>
           <artifactId>maven</artifactId>
-          <version>0.6.0</version>
+          <version>0.6.1</version>
         </plugin>
+
         <plugin>
-          <artifactId>maven-shade-plugin</artifactId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.0</version>
+          <inherited>true</inherited>
+          <configuration>
+            <!-- Retrolambda will rewrite lambdas as lower version Java bytecode if needed -->
+            <source>1.8</source>
+            <target>1.8</target>
+            <!-- or die! com.sun.tools.javac.api.JavacTool -->
+            <fork>true</fork>
+            <showWarnings>true</showWarnings>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
           <version>3.1.0</version>
         </plugin>
+
+        <plugin>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.2.1</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${maven-failsafe-plugin.version}</version>
+          <configuration>
+            <systemPropertyVariables>
+              <java.util.logging.manager>org.apache.logging.log4j.jul.LogManager
+              </java.util.logging.manager>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${maven-failsafe-plugin.version}</version>
+          <!-- Try to prevent flakes in circleci -->
+          <configuration>
+            <reuseForks>false</reuseForks>
+            <systemPropertyVariables>
+              <java.util.logging.manager>org.apache.logging.log4j.jul.LogManager
+              </java.util.logging.manager>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+
         <!-- manual only as CI keeps breaking due to incorrect git dates -->
         <plugin>
           <groupId>com.mycila</groupId>
@@ -242,49 +351,9 @@
 
     <plugins>
       <plugin>
-        <inherited>true</inherited>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.7.0</version>
-        <configuration>
-          <!-- or die! com.sun.tools.javac.api.JavacTool -->
-          <fork>true</fork>
-        </configuration>
-        <executions>
-          <!-- Ensure main source tree compiles to Java ${main.java.version} bytecode. -->
-          <execution>
-            <id>default-compile</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <configuration>
-              <compilerArgument>-Xlint:unchecked</compilerArgument>
-              <source>${main.java.version}</source>
-              <target>${main.java.version}</target>
-              <compilerId>javac-with-errorprone</compilerId>
-              <forceJavacCompilerUse>true</forceJavacCompilerUse>
-              <showWarnings>true</showWarnings>
-            </configuration>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-compiler-javac-errorprone</artifactId>
-            <version>2.8.2</version>
-          </dependency>
-          <dependency>
-            <groupId>com.google.errorprone</groupId>
-            <artifactId>error_prone_core</artifactId>
-            <version>2.2.0</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.16</version>
+        <version>1.17</version>
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
@@ -301,15 +370,15 @@
         </executions>
       </plugin>
 
-      <!-- Ensures checksums are added to published jars -->
       <plugin>
         <artifactId>maven-install-plugin</artifactId>
-        <version>2.5.2</version>
-        <configuration>
-          <createChecksum>true</createChecksum>
-        </configuration>
+        <version>3.0.0-M1</version>
       </plugin>
-
+      <!-- Uploads occur as a last step (which also adds checksums) -->
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>3.0.0-M1</version>
+      </plugin>
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <version>2.5.3</version>
@@ -317,6 +386,7 @@
           <useReleaseProfile>false</useReleaseProfile>
           <releaseProfiles>release</releaseProfiles>
           <autoVersionSubmodules>true</autoVersionSubmodules>
+          <!-- to match zipkin-scala (openzipkin/zipkin) -->
           <tagNameFormat>@{project.version}</tagNameFormat>
         </configuration>
       </plugin>
@@ -329,10 +399,74 @@
           <packageName>zipkin-finagle</packageName>
         </configuration>
       </plugin>
+
+      <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.0.0-M2</version>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <!-- currently, we don't support building with JDK 9 -->
+                <requireJavaVersion>
+                  <version>[1.8,9)</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
   <profiles>
+    <profile>
+      <id>error-prone-1.8</id>
+      <activation>
+        <jdk>1.8</jdk>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <executions>
+              <execution>
+                <!-- only use errorprone on main source tree -->
+                <id>default-compile</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+                <configuration>
+                  <compilerId>javac-with-errorprone</compilerId>
+                  <forceJavacCompilerUse>true</forceJavacCompilerUse>
+                  <compilerArgs>
+                    <arg>${errorprone.args}</arg>
+                  </compilerArgs>
+                </configuration>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-compiler-javac-errorprone</artifactId>
+                <version>2.8.5</version>
+              </dependency>
+              <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_core</artifactId>
+                <version>${errorprone.version}</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <profile>
       <id>release</id>
       <build>

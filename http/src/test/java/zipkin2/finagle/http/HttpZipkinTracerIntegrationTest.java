@@ -67,7 +67,7 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
 
     Thread.sleep(1500); // wait for http request attempt to go through
 
-    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
+    assertThat(mapAsJavaMap(stats.counters())).contains(
         entry(FinagleTestObjects.seq("spans"), 1L),
         entry(FinagleTestObjects.seq("span_bytes"), 185L),
         entry(FinagleTestObjects.seq("spans_dropped"), 1L),
@@ -79,11 +79,7 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
             "com.twitter.finagle.ConnectionFailedException"), 1L),
         entry(FinagleTestObjects.seq("messages_dropped", "com.twitter.finagle.Failure",
             "com.twitter.finagle.ConnectionFailedException",
-            "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1L),
-        entry(FinagleTestObjects.seq("messages_dropped", "com.twitter.finagle.Failure",
-            "com.twitter.finagle.ConnectionFailedException",
-            "io.netty.channel.AbstractChannel$AnnotatedConnectException",
-            "io.netty.channel.unix.Errors$NativeConnectException"), 1L)
+            "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1L)
     );
   }
 

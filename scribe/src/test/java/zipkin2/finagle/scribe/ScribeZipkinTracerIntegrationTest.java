@@ -87,7 +87,7 @@ public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTe
     Thread.sleep(1500); // wait for scribe request attempt to go through
 
     assertThat(mapAsJavaMap(stats.counters()))
-        .containsOnly(
+        .contains(
             entry(seq("spans"), 1L),
             entry(seq("span_bytes"), 165L),
             entry(seq("spans_dropped"), 1L),
@@ -107,14 +107,6 @@ public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTe
                     "com.twitter.finagle.Failure",
                     "com.twitter.finagle.ConnectionFailedException",
                     "io.netty.channel.AbstractChannel$AnnotatedConnectException"),
-                1L),
-            entry(
-                seq(
-                    "messages_dropped",
-                    "com.twitter.finagle.Failure",
-                    "com.twitter.finagle.ConnectionFailedException",
-                    "io.netty.channel.AbstractChannel$AnnotatedConnectException",
-                    "io.netty.channel.unix.Errors$NativeConnectException"),
                 1L));
   }
 }
