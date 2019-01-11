@@ -18,7 +18,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.zipkin.finagle2</groupId>
-  <artifactId>zipkin-finagle-parent_2.12</artifactId>
+  <artifactId>zipkin-finagle-parent_2.11</artifactId>
   <version>2.0.10-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -36,9 +36,9 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <main.basedir>${project.basedir}</main.basedir>
 
-    <!-- default bytecode version for src/main -->
-    <main.java.version>1.8</main.java.version>
-    <main.signature.artifact>java18</main.signature.artifact>
+    <!-- default bytecode version for src/main (java 1.7 for scala 2.11) -->
+    <main.java.version>1.7</main.java.version>
+    <main.signature.artifact>java17</main.signature.artifact>
 
     <!-- default bytecode version for src/test -->
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -49,7 +49,7 @@
     <errorprone.version>2.3.2</errorprone.version>
 
     <!-- version numbers that are used more than once -->
-    <scala.binary.version>2.12</scala.binary.version>
+    <scala.binary.version>2.11</scala.binary.version>
     <finagle.version>19.1.0</finagle.version>
     <log4j.version>2.11.1</log4j.version>
     <auto-value.version>1.6.3</auto-value.version>
@@ -270,6 +270,24 @@
             <fork>true</fork>
             <showWarnings>true</showWarnings>
           </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>net.orfjackal.retrolambda</groupId>
+          <artifactId>retrolambda-maven-plugin</artifactId>
+          <version>2.5.6</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>process-main</goal>
+              </goals>
+              <configuration>
+                <target>${main.java.version}</target>
+                <fork>true</fork>
+                <quiet>true</quiet>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
 
         <plugin>

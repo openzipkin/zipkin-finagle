@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static scala.Option.empty;
-import static scala.collection.JavaConverters.mapAsJavaMap;
+import static scala.collection.JavaConverters.mapAsJavaMapConverter;
 import static zipkin2.finagle.FinagleTestObjects.TODAY;
 import static zipkin2.finagle.FinagleTestObjects.root;
 import static zipkin2.finagle.FinagleTestObjects.seq;
@@ -128,7 +128,7 @@ public class ZipkinTracerTest {
 
     tracer.reporter.flush();
 
-    assertThat(mapAsJavaMap(stats.counters())).containsExactly(
+    assertThat(mapAsJavaMapConverter(stats.counters()).asJava()).containsExactly(
         entry(seq("span_bytes"), 165L),
         entry(seq("spans"), 1L),
         entry(seq("spans_dropped"),0L),
@@ -155,7 +155,7 @@ public class ZipkinTracerTest {
     } catch (IllegalStateException e) {
     }
 
-    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
+    assertThat(mapAsJavaMapConverter(stats.counters()).asJava()).containsOnly(
         entry(seq("spans"), 1L),
         entry(seq("span_bytes"), 165L),
         entry(seq("spans_dropped"), 1L),

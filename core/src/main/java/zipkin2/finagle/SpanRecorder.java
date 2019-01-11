@@ -19,6 +19,7 @@ import com.twitter.finagle.tracing.Record;
 import com.twitter.finagle.tracing.TraceId;
 import com.twitter.util.AbstractClosable;
 import com.twitter.util.Duration;
+import com.twitter.util.Function0;
 import com.twitter.util.Future;
 import com.twitter.util.Time;
 import com.twitter.util.Time$;
@@ -47,9 +48,11 @@ final class SpanRecorder extends AbstractClosable {
   SpanRecorder(Reporter<zipkin2.Span> reporter, StatsReceiver stats, Timer timer) {
     this.reporter = reporter;
     this.unhandledReceiver = stats.scope("record").scope("unhandled");
-    this.flusher = timer.schedule(ttl.$div(2L), () -> {
-      flush(ttl.ago());
-      return null;
+    this.flusher = timer.schedule(ttl.$div(2L), new Function0<BoxedUnit>() {
+      @Override public BoxedUnit apply() {
+        flush(ttl.ago());
+        return BoxedUnit.UNIT;
+      }
     });
   }
 
