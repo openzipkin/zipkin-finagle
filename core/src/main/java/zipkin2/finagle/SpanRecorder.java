@@ -27,13 +27,14 @@ import com.twitter.util.TimerTask;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import scala.runtime.BoxedUnit;
 import zipkin2.reporter.Reporter;
 import zipkin2.v1.V1SpanConverter;
 
 final class SpanRecorder extends AbstractClosable {
   private static final String ERROR_FORMAT = "%s: %s"; // annotation: errorMessage
-  final Duration ttl = Duration.fromSeconds(120);
+  final Duration ttl = Duration.apply(120, TimeUnit.SECONDS);
   private final ConcurrentHashMap<TraceId, MutableSpan> spanMap = new ConcurrentHashMap<>(64);
   private final Reporter<zipkin2.Span> reporter;
   /**
@@ -81,69 +82,69 @@ final class SpanRecorder extends AbstractClosable {
       span.addAnnotation(record.timestamp(), "ws");
     } else if (Annotation.WireRecv$.MODULE$.equals(annotation)) {
       span.addAnnotation(record.timestamp(), "wr");
-    } else if ((annotation instanceof Annotation.WireRecvError)) {
+    } else if (annotation instanceof Annotation.WireRecvError) {
       String error = ((Annotation.WireRecvError) annotation).error();
       span.addAnnotation(record.timestamp(),
           String.format(ERROR_FORMAT, "Wire Receive Error", error));
-    } else if ((Annotation.ClientSend$.MODULE$.equals(annotation))) {
+    } else if (Annotation.ClientSend$.MODULE$.equals(annotation)) {
       span.addAnnotation(record.timestamp(), "cs");
-    } else if ((Annotation.ClientRecv$.MODULE$.equals(annotation))) {
+    } else if (Annotation.ClientRecv$.MODULE$.equals(annotation)) {
       span.addAnnotation(record.timestamp(), "cr");
-    } else if ((annotation instanceof Annotation.ClientRecvError)) {
+    } else if (annotation instanceof Annotation.ClientRecvError) {
       String error = ((Annotation.ClientRecvError) annotation).error();
       span.addAnnotation(record.timestamp(),
           String.format(ERROR_FORMAT, "Client Receive Error", error));
-    } else if ((Annotation.ServerSend$.MODULE$.equals(annotation))) {
+    } else if (Annotation.ServerSend$.MODULE$.equals(annotation)) {
       span.addAnnotation(record.timestamp(), "ss");
-    } else if ((Annotation.ServerRecv$.MODULE$.equals(annotation))) {
+    } else if (Annotation.ServerRecv$.MODULE$.equals(annotation)) {
       span.addAnnotation(record.timestamp(), "sr");
-    } else if ((annotation instanceof Annotation.ServerSendError)) {
+    } else if (annotation instanceof Annotation.ServerSendError) {
       String error = ((Annotation.ServerSendError) annotation).error();
       span.addAnnotation(record.timestamp(),
           String.format(ERROR_FORMAT, "Server Send Error", error));
-    } else if ((Annotation.ClientSendFragment$.MODULE$.equals(annotation))) {
+    } else if (Annotation.ClientSendFragment$.MODULE$.equals(annotation)) {
       span.addAnnotation(record.timestamp(), "csf");
-    } else if ((Annotation.ClientRecvFragment$.MODULE$.equals(annotation))) {
+    } else if (Annotation.ClientRecvFragment$.MODULE$.equals(annotation)) {
       span.addAnnotation(record.timestamp(), "crf");
-    } else if ((Annotation.ServerSendFragment$.MODULE$.equals(annotation))) {
+    } else if (Annotation.ServerSendFragment$.MODULE$.equals(annotation)) {
       span.addAnnotation(record.timestamp(), "ssf");
-    } else if ((Annotation.ServerRecvFragment$.MODULE$.equals(annotation))) {
+    } else if (Annotation.ServerRecvFragment$.MODULE$.equals(annotation)) {
       span.addAnnotation(record.timestamp(), "srf");
-    } else if ((annotation instanceof Annotation.Message)) {
+    } else if (annotation instanceof Annotation.Message) {
       String value = ((Annotation.Message) annotation).content();
       span.addAnnotation(record.timestamp(), value);
-    } else if ((annotation instanceof Annotation.Rpc)) {
+    } else if (annotation instanceof Annotation.Rpc) {
       String name = ((Annotation.Rpc) annotation).name();
       span.setName(name);
-    } else if ((annotation instanceof Annotation.ServiceName)) {
+    } else if (annotation instanceof Annotation.ServiceName) {
       String service = ((Annotation.ServiceName) annotation).service();
       span.setServiceName(service);
-    } else if ((annotation instanceof Annotation.BinaryAnnotation)) {
+    } else if (annotation instanceof Annotation.BinaryAnnotation) {
       String key = ((Annotation.BinaryAnnotation) annotation).key();
       Object value = ((Annotation.BinaryAnnotation) annotation).value();
-      if ((value instanceof Boolean)) {
+      if (value instanceof Boolean) {
         span.addBinaryAnnotation(key, value.toString());
-      } else if ((value instanceof Short)) {
+      } else if (value instanceof Short) {
         span.addBinaryAnnotation(key, value.toString());
-      } else if ((value instanceof Integer)) {
+      } else if (value instanceof Integer) {
         span.addBinaryAnnotation(key, value.toString());
-      } else if ((value instanceof Long)) {
+      } else if (value instanceof Long) {
         span.addBinaryAnnotation(key, value.toString());
-      } else if ((value instanceof Double)) {
+      } else if (value instanceof Double) {
         span.addBinaryAnnotation(key, value.toString());
-      } else if ((value instanceof String)) {
+      } else if (value instanceof String) {
         span.addBinaryAnnotation(key, value.toString());
       } else {
         unhandledReceiver.counter0(value.getClass().getName()).incr();
       }
-    } else if ((annotation instanceof Annotation.LocalAddr)) {
+    } else if (annotation instanceof Annotation.LocalAddr) {
       InetSocketAddress ia = ((Annotation.LocalAddr) annotation).ia();
       span.setEndpoint(Endpoints.boundEndpoint(Endpoints.fromSocketAddress(ia)));
-    } else if ((annotation instanceof Annotation.ClientAddr)) {
+    } else if (annotation instanceof Annotation.ClientAddr) {
       // use a binary annotation over a regular annotation to avoid a misleading timestamp
       InetSocketAddress ia = ((Annotation.ClientAddr) annotation).ia();
       span.setAddress("ca", ia);
-    } else if ((annotation instanceof Annotation.ServerAddr)) {
+    } else if (annotation instanceof Annotation.ServerAddr) {
       InetSocketAddress ia = ((Annotation.ServerAddr) annotation).ia();
       span.setAddress("sa", ia);
     } else {
