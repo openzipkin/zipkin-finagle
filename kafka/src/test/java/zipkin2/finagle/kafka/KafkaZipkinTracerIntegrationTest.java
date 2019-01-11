@@ -42,7 +42,7 @@ import zipkin2.reporter.kafka11.KafkaSender;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static scala.collection.JavaConverters.mapAsJavaMap;
+import static scala.collection.JavaConverters.mapAsJavaMapConverter;
 
 public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest {
 
@@ -95,7 +95,7 @@ public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTes
 
     Thread.sleep(1500); // wait for kafka request attempt to go through
 
-    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
+    assertThat(mapAsJavaMapConverter(stats.counters()).asJava()).containsOnly(
         entry(FinagleTestObjects.seq("spans"), 1L),
         entry(FinagleTestObjects.seq("span_bytes"), 185L),
         entry(FinagleTestObjects.seq("spans_dropped"), 1L),
