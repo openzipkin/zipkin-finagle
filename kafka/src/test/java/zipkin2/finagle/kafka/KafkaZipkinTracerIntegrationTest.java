@@ -101,7 +101,7 @@ public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTes
         entry(FinagleTestObjects.seq("spans_dropped"), 1L),
         entry(FinagleTestObjects.seq("messages"), 1L),
         entry(FinagleTestObjects.seq("message_bytes"), 187L),
-        entry(FinagleTestObjects.seq("messages_dropped"), 1L),
+        entry(FinagleTestObjects.seq("messages_dropped"), 2L),
         entry(FinagleTestObjects.seq("messages_dropped", "org.apache.kafka.common.errors.TimeoutException"), 1L)
     );
   }
