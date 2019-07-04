@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenZipkin Authors
+ * Copyright 2016-2019 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -53,6 +53,16 @@ public class ZipkinTracerTest {
   InMemoryStatsReceiver stats = new InMemoryStatsReceiver();
   BlockingQueue<List<Span>> spansSent = new LinkedBlockingDeque<>();
 
+  ZipkinTracer.Config config = new ZipkinTracer.Config() {
+    @Override public String localServiceName() {
+      return "unknown";
+    }
+
+    @Override public float initialSampleRate() {
+      return 1.0f;
+    }
+  };
+
   ZipkinTracer tracer = newTracer(FakeSender.create().onSpans(spansSent::add));
 
   ZipkinTracer newTracer(Sender sender) {
@@ -60,14 +70,45 @@ public class ZipkinTracerTest {
         .messageTimeout(0, TimeUnit.MILLISECONDS)
         .messageMaxBytes(176 + 5) // size of a simple span w/ 128-bit trace ID + list overhead
         .metrics(new ReporterMetricsAdapter(stats))
+<<<<<<< HEAD
         .build())
         .initialSampleRate(1.0f)
         .stats(stats).build();
+=======
+        .build(), config, stats);
+>>>>>>> Adds flag zipkin.localServiceName to override any annotations
   }
 
   @After
   public void closeTracer() {
     tracer.close();
+  }
+
+  @Test public void defaultIsLocalServiceNameFromAnnotation() throws Exception {
+    recordClientSpan(root);
+
+    assertThat(spansSent.take().stream())
+        .flatExtracting(Span::localServiceName)
+        .containsExactly("web");
+  }
+
+  @Test public void configOverridesLocalServiceName() throws Exception {
+    config = new ZipkinTracer.Config() {
+      @Override public String localServiceName() {
+        return "favstar";
+      }
+
+      @Override public float initialSampleRate() {
+        return 1.0f;
+      }
+    };
+    tracer = newTracer(FakeSender.create().onSpans(spansSent::add));
+
+    recordClientSpan(root);
+
+    assertThat(spansSent.take().stream())
+        .flatExtracting(Span::localServiceName)
+        .containsExactly("favstar");
   }
 
   @Test public void unfinishedSpansArentImplicitlyReported() throws Exception {
@@ -81,6 +122,7 @@ public class ZipkinTracerTest {
   }
 
   @Test public void finishedSpansAreImplicitlyReported() throws Exception {
+<<<<<<< HEAD
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
@@ -89,6 +131,9 @@ public class ZipkinTracerTest {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     flush();
+=======
+    recordClientSpan(root);
+>>>>>>> Adds flag zipkin.localServiceName to override any annotations
 
     assertThat(spansSent.take().stream())
         .flatExtracting(Span::kind)
@@ -107,6 +152,7 @@ public class ZipkinTracerTest {
         false
     );
 
+<<<<<<< HEAD
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
@@ -115,6 +161,9 @@ public class ZipkinTracerTest {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     flush();
+=======
+    recordClientSpan(root);
+>>>>>>> Adds flag zipkin.localServiceName to override any annotations
 
     assertThat(spansSent.take().stream())
         .extracting(Span::traceId)
@@ -122,6 +171,7 @@ public class ZipkinTracerTest {
   }
 
   @Test
+<<<<<<< HEAD
   public void reportIncrementsAcceptedMetrics() {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
@@ -129,6 +179,10 @@ public class ZipkinTracerTest {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     flush();
+=======
+  public void reportIncrementsAcceptedMetrics() throws Exception {
+    recordClientSpan(root);
+>>>>>>> Adds flag zipkin.localServiceName to override any annotations
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
         entry(seq("span_bytes"), 165L),
@@ -170,7 +224,19 @@ public class ZipkinTracerTest {
     );
   }
 
+<<<<<<< HEAD
   void flush() {
     ((AsyncReporter) tracer.reporter).flush();
+=======
+  void recordClientSpan(TraceId traceId) {
+    tracer.record(new Record(traceId, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(traceId, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(traceId, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
+
+    // client receive reports the span
+    tracer.record(new Record(traceId, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
+
+    tracer.reporter.flush();
+>>>>>>> Adds flag zipkin.localServiceName to override any annotations
   }
 }

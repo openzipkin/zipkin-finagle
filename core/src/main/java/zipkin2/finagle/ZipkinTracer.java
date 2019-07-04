@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenZipkin Authors
+ * Copyright 2016-2019 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -31,6 +31,7 @@ import scala.Option;
 import scala.Some;
 import scala.runtime.BoxedUnit;
 import zipkin2.Span;
+import zipkin2.internal.Nullable;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.Reporter;
 import zipkin2.reporter.Sender;
@@ -106,7 +107,7 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
   }
 
   ZipkinTracer(Reporter<Span> reporter, Config config, StatsReceiver stats) {
-    this(reporter, new RawZipkinTracer(reporter, stats), config);
+    this(reporter, new RawZipkinTracer(reporter, stats, config.localServiceName()), config);
   }
 
   private ZipkinTracer(Reporter<Span> reporter, RawZipkinTracer underlying, Config config) {
@@ -134,6 +135,7 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
   }
 
   protected interface Config {
+    @Nullable String localServiceName();
     /** How much data to collect. Default sample rate 0.001 (0.1%). Max is 1, min 0. */
     float initialSampleRate();
   }
@@ -144,8 +146,9 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     /**
      * @param stats We generate stats to keep track of traces sent, failures and so on
      */
-    RawZipkinTracer(Reporter<Span> reporter, StatsReceiver stats) {
-      this.recorder = new SpanRecorder(reporter, stats, DefaultTimer.getInstance());
+    RawZipkinTracer(Reporter<Span> reporter, StatsReceiver stats, String localServiceName) {
+      this.recorder =
+          new SpanRecorder(reporter, stats, DefaultTimer.getInstance(), localServiceName);
     }
 
     @Override public Option<Object> sampleTrace(TraceId traceId) {
@@ -213,6 +216,11 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
 
   static final class StaticConfig implements Config {
     float initialSampleRate = zipkin.initialSampleRate$.Flag.apply();
+    String localServiceName = zipkin.localServiceName$.Flag.apply();
+
+    @Override public String localServiceName() {
+      return localServiceName;
+    }
 
     @Override public float initialSampleRate() {
       return initialSampleRate;

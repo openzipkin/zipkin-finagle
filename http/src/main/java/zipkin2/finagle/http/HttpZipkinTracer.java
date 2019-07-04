@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenZipkin Authors
+ * Copyright 2016-2019 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -20,12 +20,15 @@ import com.twitter.finagle.Resolver$;
 import com.twitter.finagle.stats.DefaultStatsReceiver$;
 import com.twitter.finagle.stats.NullStatsReceiver;
 import com.twitter.finagle.stats.StatsReceiver;
+import com.twitter.finagle.tracing.Annotation;
 import com.twitter.finagle.tracing.Tracer;
 import com.twitter.util.Future;
 import com.twitter.util.Time;
 import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
+import zipkin.localServiceName$;
 import zipkin2.finagle.ZipkinTracer;
+import zipkin2.internal.Nullable;
 
 @AutoService(Tracer.class)
 public final class HttpZipkinTracer extends ZipkinTracer {
@@ -83,6 +86,7 @@ public final class HttpZipkinTracer extends ZipkinTracer {
           .hostHeader(zipkin.http.hostHeader$.Flag.apply())
           .host(zipkin.http.host$.Flag.apply())
           .compressionEnabled(zipkin.http.compressionEnabled$.Flag.apply())
+          .localServiceName(localServiceName$.Flag.apply())
           .initialSampleRate(zipkin.initialSampleRate$.Flag.apply());
     }
 
@@ -96,6 +100,18 @@ public final class HttpZipkinTracer extends ZipkinTracer {
 
     @AutoValue.Builder
     public abstract static class Builder {
+      /**
+       * Lower-case label of the remote node in the service graph, such as "favstar". Avoid names
+       * with variables or unique identifiers embedded.
+       *
+       * <p>When unset, the service name is derived from {@link Annotation.ServiceName} which is
+       * often incorrectly set to the remote service name.
+       *
+       * <p>This is a primary label for trace lookup and aggregation, so it should be intuitive and
+       * consistent. Many use a name from service discovery.
+       */
+      public abstract Builder localServiceName(String localServiceName);
+
       /** The network location of the Zipkin http service. Defaults to "localhost:9411" */
       public abstract Builder host(Name host);
 

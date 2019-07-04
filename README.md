@@ -26,6 +26,12 @@ client = Http$.MODULE$.client()
               .newService("remotehost:8080");
 ```
 
+### Note on service names
+
+Sometimes labels used in Finagle do not match the intent of the Zipkin service name. If your traces
+or dependency graph looks incorrect, set the flag `zipkin.localServiceName`. This will ignore any of
+the labels set by servers or clients with the consistent value you supply.
+
 ## Configuration
 
 ### Global Flags
@@ -35,14 +41,15 @@ Global flags can either be set by system property, or commandline argument (ex i
 
 Ex the following are equivalent ways to trace every request:
 ```bash
-$ java -Dzipkin.initialSampleRate=1.0 ...
-$ java -cp my-twitter-server.jar -zipkin.initialSampleRate=1.0
+$ java -Dzipkin.localServiceName=favestar  -Dzipkin.initialSampleRate=1.0 ...
+$ java -cp my-twitter-server.jar -zipkin.localServiceName=favestar -zipkin.initialSampleRate=1.0
 ```
 
 Here are the flags that apply to all transports:
 
 Flag | Default | Description
 --- | --- | ---
+zipkin.localServiceName | unknown | Overrides any ServiceName annotation set by Finagle. Controls Span.localEndpoint.serviceName in Zipkin.
 zipkin.initialSampleRate | 0.001 (0.1%) | Percentage of traces to sample (report to zipkin) in the range [0.0 - 1.0]
 
 ### Http Configuration
