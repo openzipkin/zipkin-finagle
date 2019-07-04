@@ -28,7 +28,7 @@ import scala.collection.mutable.StringBuilder;
 import scala.runtime.BoxedUnit;
 import zipkin2.codec.Encoding;
 import zipkin2.finagle.ZipkinTracer;
-import zipkin2.reporter.kafka11.KafkaSender;
+import zipkin2.reporter.kafka.KafkaSender;
 
 @AutoService(com.twitter.finagle.tracing.Tracer.class)
 public final class KafkaZipkinTracer extends ZipkinTracer {

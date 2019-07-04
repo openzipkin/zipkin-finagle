@@ -37,7 +37,7 @@ import zipkin2.codec.SpanBytesDecoder;
 import zipkin2.finagle.FinagleTestObjects;
 import zipkin2.finagle.ZipkinTracer;
 import zipkin2.finagle.ZipkinTracerIntegrationTest;
-import zipkin2.reporter.kafka11.KafkaSender;
+import zipkin2.reporter.kafka.KafkaSender;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;

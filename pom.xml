@@ -46,17 +46,17 @@
 
     <!-- override to set exclusions per-project: default to ignore warnings about flag naming -->
     <errorprone.args>-Xep:VariableNameSameAsType:OFF</errorprone.args>
-    <errorprone.version>2.3.2</errorprone.version>
+    <errorprone.version>2.3.3</errorprone.version>
 
     <!-- version numbers that are used more than once -->
     <scala.binary.version>2.12</scala.binary.version>
     <finagle.version>19.6.0</finagle.version>
-    <log4j.version>2.11.1</log4j.version>
+    <log4j.version>2.12.0</log4j.version>
     <auto-value.version>1.6.3</auto-value.version>
-    <zipkin-reporter.version>2.7.13</zipkin-reporter.version>
+    <zipkin-reporter.version>2.9.0</zipkin-reporter.version>
 
     <maven-failsafe-plugin.version>3.0.0-M3</maven-failsafe-plugin.version>
-    <license-maven-plugin.version>2.11</license-maven-plugin.version>
+    <license-maven-plugin.version>3.0</license-maven-plugin.version>
   </properties>
 
   <name>Zipkin Finagle (Parent)</name>
@@ -72,7 +72,7 @@
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
@@ -101,7 +101,7 @@
     </repository>
     <snapshotRepository>
       <id>jfrog-snapshots</id>
-      <url>http://oss.jfrog.org/artifactory/oss-snapshot-local</url>
+      <url>https://oss.jfrog.org/artifactory/oss-snapshot-local</url>
     </snapshotRepository>
   </distributionManagement>
 
@@ -137,7 +137,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.25</version>
+        <version>1.7.26</version>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
@@ -205,7 +205,7 @@
     <dependency>
       <groupId>com.google.auto.service</groupId>
       <artifactId>auto-service</artifactId>
-      <version>1.0-rc4</version>
+      <version>1.0-rc5</version>
       <scope>provided</scope>
     </dependency>
 
@@ -218,7 +218,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.11.1</version>
+      <version>3.12.2</version>
       <scope>test</scope>
     </dependency>
 
@@ -251,16 +251,19 @@
   <build>
     <pluginManagement>
       <plugins>
-        <!-- mvn -N io.takari:maven:wrapper -Dmaven=3.6.0 -->
+        <!-- mvn -N io.takari:maven:wrapper generates the ./mvnw script -->
         <plugin>
           <groupId>io.takari</groupId>
           <artifactId>maven</artifactId>
-          <version>0.6.1</version>
+          <version>0.7.6</version>
+          <configuration>
+            <maven>3.6.1</maven>
+          </configuration>
         </plugin>
 
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>3.8.1</version>
           <inherited>true</inherited>
           <configuration>
             <!-- Retrolambda will rewrite lambdas as lower version Java bytecode if needed -->
@@ -274,7 +277,7 @@
 
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.2</version>
         </plugin>
 
         <plugin>
@@ -353,7 +356,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.17</version>
+        <version>1.18</version>
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
@@ -394,7 +397,7 @@
       <plugin>
         <groupId>io.zipkin.centralsync-maven-plugin</groupId>
         <artifactId>centralsync-maven-plugin</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.1</version>
         <configuration>
           <packageName>zipkin-finagle</packageName>
         </configuration>
@@ -474,7 +477,7 @@
           <!-- Creates source jar -->
           <plugin>
             <artifactId>maven-source-plugin</artifactId>
-            <version>3.0.1</version>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <id>attach-sources</id>
@@ -487,10 +490,11 @@
 
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.10.4</version>
+            <version>3.1.0</version>
             <configuration>
               <failOnError>false</failOnError>
-              <additionalparam>-Xdoclint:none</additionalparam>
+              <!-- hush pedantic warnings: we don't put param and return on everything! -->
+              <doclint>none</doclint>
             </configuration>
             <executions>
               <execution>
