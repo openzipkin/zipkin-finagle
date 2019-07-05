@@ -183,6 +183,18 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     }
 
     /**
+     * The localEndpoint.serviceName to use for all spans sent to Zipkin.
+     *
+     * <p>Default is to look at the {@link Annotation.ServiceName} annotation. However, as clients
+     * often set this to the destination host, you may with to override this here.
+     */
+    public Builder localServiceName(String localServiceName) {
+      if (localServiceName == null) throw new NullPointerException("localServiceName == null");
+      this.config.localServiceName = localServiceName;
+      return this;
+    }
+
+    /**
      * Percentage of traces to sample (report to zipkin) in the range [0.0 - 1.0].
      *
      * <p>Default is the value of the flag {@code zipkin.initialSampleRate} which if not overridden

@@ -29,9 +29,12 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import scala.runtime.BoxedUnit;
+import zipkin2.Endpoint;
 import zipkin2.Span;
 import zipkin2.reporter.Reporter;
 import zipkin2.v1.V1SpanConverter;
+
+import static zipkin2.Span.Kind.CLIENT;
 
 final class SpanRecorder extends AbstractClosable {
   private static final String ERROR_FORMAT = "%s: %s"; // annotation: errorMessage
@@ -173,9 +176,28 @@ final class SpanRecorder extends AbstractClosable {
 
   void report(MutableSpan span) {
     // Override the local service name
-    if (localServiceName != null) span.setServiceName(localServiceName);
-    for (zipkin2.Span v2span : V1SpanConverter.create().convert(span.toSpan())) {
-      reporter.report(v2span);
+    String oldService = null;
+    if (localServiceName != null) {
+      oldService = span.getService();
+      if ("unknown".equals(oldService)) oldService = null;
+      span.setServiceName(localServiceName);
     }
+    for (zipkin2.Span v2span : V1SpanConverter.create().convert(span.toSpan())) {
+      v2span = moveServiceNameToRemoteServiceName(v2span, oldService);
+      reporter.report(moveServiceNameToRemoteServiceName(v2span, oldService));
+    }
+  }
+
+  static Span moveServiceNameToRemoteServiceName(Span v2span, String oldService) {
+    if (CLIENT.equals(v2span.kind()) && oldService != null) {
+      Endpoint remoteEndpoint = v2span.remoteEndpoint();
+      if (remoteEndpoint == null) {
+        remoteEndpoint = Endpoint.newBuilder().serviceName(oldService).build();
+      } else {
+        remoteEndpoint = remoteEndpoint.toBuilder().serviceName(oldService).build();
+      }
+      v2span = v2span.toBuilder().remoteEndpoint(remoteEndpoint).build();
+    }
+    return v2span;
   }
 }

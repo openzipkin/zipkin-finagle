@@ -19,8 +19,8 @@ import com.twitter.app.JavaGlobalFlag;
 
 public final class localServiceName$ extends JavaGlobalFlag<String> {
   private localServiceName$() {
-    super("unknown",
-        "The localEndpoint.serviceName to use for all spans sent to Zipkin", Flaggable.ofString());
+    super("unknown", "The localEndpoint.serviceName to use for all spans sent to Zipkin",
+        Flaggable.ofString());
   }
 
   public static final com.twitter.app.Flag<String> Flag = new localServiceName$();

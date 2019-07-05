@@ -30,7 +30,9 @@ client = Http$.MODULE$.client()
 
 Sometimes labels used in Finagle do not match the intent of the Zipkin service name. If your traces
 or dependency graph looks incorrect, set the flag `zipkin.localServiceName`. This will ignore any of
-the labels set by servers or clients with the consistent value you supply.
+the labels set by servers. In clients, the `ServiceName` recorded by Finagle will be moved to
+`span.remoteEndpoint.serviceName` in Zipkin under the assumption that it was intended to name the
+remote host.
 
 ## Configuration
 
