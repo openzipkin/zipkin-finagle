@@ -13,6 +13,7 @@
  */
 package zipkin2.finagle;
 
+import com.twitter.finagle.stats.DefaultStatsReceiver$;
 import com.twitter.finagle.stats.StatsReceiver;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.finagle.tracing.TraceId;
@@ -51,10 +52,41 @@ import zipkin2.reporter.Sender;
  *     super(new HttpReporter(config.host()), stats, config.initialSampleRate());
  *   }
  * }</pre>
+ *
+ * <p>If you don't need to use service loader, an alternate way to manually configure the tracer is
+ * via {@link #newBuilder(Sender)}
  */
 // It would be cleaner to obviate SamplingTracer and the dependency on finagle-zipkin-core, but
 // SamplingTracer includes unrelated event logic https://github.com/twitter/finagle/issues/540
 public class ZipkinTracer extends SamplingTracer implements Closable {
+
+  /**
+   * Normally, Finagle configures the tracer implicitly and through flags. This implies constraints
+   * needed for service loading. Alternatively, you can use this type to explicitly configure any
+   * sender available in Zipkin.
+   *
+   * <p>Ex.
+   * <pre>{@code
+   * // Setup a sender without using Finagle flags like so:
+   * Properties overrides = new Properties();
+   * overrides.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
+   * sender = KafkaSender.newBuilder()
+   *   .bootstrapServers("host1:9092,host2:9092")
+   *   .overrides(overrides)
+   *   .encoding(Encoding.PROTO3)
+   *   .build();
+   *
+   * // Now, use it here, but don't forget to close the sender!
+   * tracer = ZipkinTracer.newBuilder(sender).build();
+   * }</pre>
+   *
+   * <p><em>Note</em>: You must close the supplied sender externally, after this instance is
+   * closed.
+   */
+  public static Builder newBuilder(Sender sender) {
+    return new Builder(sender);
+  }
+
   final AsyncReporter<Span> reporter;
   final RawZipkinTracer underlying;
 
@@ -102,18 +134,15 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
       this.recorder = new SpanRecorder(reporter, stats, DefaultTimer.getInstance());
     }
 
-    @Override
-    public Option<Object> sampleTrace(TraceId traceId) {
+    @Override public Option<Object> sampleTrace(TraceId traceId) {
       return Some.apply(true);
     }
 
-    @Override
-    public boolean isNull() {
+    @Override public boolean isNull() {
       return false;
     }
 
-    @Override
-    public boolean isActivelyTracing(TraceId traceId) {
+    @Override public boolean isActivelyTracing(TraceId traceId) {
       return true;
     }
 
@@ -121,9 +150,52 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
      * Mutates the Span with whatever new info we have. If we see an "end" annotation we remove the
      * span and send it off.
      */
-    @Override
-    public void record(Record record) {
+    @Override public void record(Record record) {
       recorder.record(record);
+    }
+  }
+
+  public static final class Builder {
+    final Sender sender;
+    StaticConfig config = new StaticConfig();
+    StatsReceiver stats = DefaultStatsReceiver$.MODULE$.get().scope("zipkin");
+
+    Builder(Sender sender) {
+      if (sender == null) throw new NullPointerException("sender == null");
+      this.sender = sender;
+    }
+
+    /**
+     * Percentage of traces to sample (report to zipkin) in the range [0.0 - 1.0].
+     *
+     * <p>Default is the value of the flag {@code zipkin.initialSampleRate} which if not overridden
+     * is 0.001f (0.1%).
+     */
+    public Builder initialSampleRate(float initialSampleRate) {
+      if (initialSampleRate < 0.0f || initialSampleRate > 1.0f) {
+        throw new IllegalArgumentException("initialSampleRate must be in the range [0.0 - 1.0]");
+      }
+      this.config.initialSampleRate = initialSampleRate;
+      return this;
+    }
+
+    /** Name of the scope to emit span metrics to. Default "zipkin" */
+    public Builder statsScope(String statsScope) {
+      if (statsScope == null) throw new NullPointerException("statsScope == null");
+      this.stats = DefaultStatsReceiver$.MODULE$.get().scope(statsScope);
+      return this;
+    }
+
+    public ZipkinTracer build() {
+      return new ZipkinTracer(sender, config, stats);
+    }
+  }
+
+  static final class StaticConfig implements Config {
+    float initialSampleRate = zipkin.initialSampleRate$.Flag.apply();
+
+    @Override public float initialSampleRate() {
+      return initialSampleRate;
     }
   }
 }
