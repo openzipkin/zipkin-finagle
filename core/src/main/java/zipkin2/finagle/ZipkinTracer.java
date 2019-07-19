@@ -24,11 +24,14 @@ import com.twitter.util.Closable;
 import com.twitter.util.Duration;
 import com.twitter.util.Future;
 import com.twitter.util.Time;
+import java.io.Closeable;
+import java.io.IOException;
 import scala.Option;
 import scala.Some;
 import scala.runtime.BoxedUnit;
 import zipkin2.Span;
 import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.Reporter;
 import zipkin2.reporter.Sender;
 
 /**
@@ -54,7 +57,7 @@ import zipkin2.reporter.Sender;
  * }</pre>
  *
  * <p>If you don't need to use service loader, an alternate way to manually configure the tracer is
- * via {@link #newBuilder(Sender)}
+ * via {@link #newBuilder(Reporter)}
  */
 // It would be cleaner to obviate SamplingTracer and the dependency on finagle-zipkin-core, but
 // SamplingTracer includes unrelated event logic https://github.com/twitter/finagle/issues/540
@@ -76,18 +79,23 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
    *   .encoding(Encoding.PROTO3)
    *   .build();
    *
+   * zipkinStats = stats.scope("zipkin");
+   * spanReporter = AsyncReporter.builder(sender)
+   *   .metrics(new ReporterMetricsAdapter(zipkinStats)) // routes reporter metrics to finagle stats
+   *   .build()
+   *
    * // Now, use it here, but don't forget to close the sender!
-   * tracer = ZipkinTracer.newBuilder(sender).build();
+   * tracer = ZipkinTracer.newBuilder(spanReporter).stats(zipkinStats).build();
    * }</pre>
    *
    * <p><em>Note</em>: You must close the supplied sender externally, after this instance is
    * closed.
    */
-  public static Builder newBuilder(Sender sender) {
-    return new Builder(sender);
+  public static Builder newBuilder(Reporter<Span> spanReporter) {
+    return new Builder(spanReporter);
   }
 
-  final AsyncReporter<Span> reporter;
+  final Reporter<Span> reporter;
   final RawZipkinTracer underlying;
 
   protected ZipkinTracer(Sender sender, Config config, StatsReceiver stats) {
@@ -96,11 +104,11 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
         .build(), config, stats);
   }
 
-  ZipkinTracer(AsyncReporter<Span> reporter, Config config, StatsReceiver stats) {
+  ZipkinTracer(Reporter<Span> reporter, Config config, StatsReceiver stats) {
     this(reporter, new RawZipkinTracer(reporter, stats), config);
   }
 
-  private ZipkinTracer(AsyncReporter<Span> reporter, RawZipkinTracer underlying, Config config) {
+  private ZipkinTracer(Reporter<Span> reporter, RawZipkinTracer underlying, Config config) {
     super(underlying, config.initialSampleRate());
     this.reporter = reporter;
     this.underlying = underlying;
@@ -111,7 +119,12 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
   }
 
   @Override public Future<BoxedUnit> close(Time deadline) {
-    reporter.close();
+    if (reporter instanceof Closeable) {
+      try {
+        ((Closeable) reporter).close();
+      } catch (IOException | RuntimeException ignored) {
+      }
+    }
     return underlying.recorder.close(deadline);
   }
 
@@ -130,7 +143,7 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     /**
      * @param stats We generate stats to keep track of traces sent, failures and so on
      */
-    RawZipkinTracer(AsyncReporter<Span> reporter, StatsReceiver stats) {
+    RawZipkinTracer(Reporter<Span> reporter, StatsReceiver stats) {
       this.recorder = new SpanRecorder(reporter, stats, DefaultTimer.getInstance());
     }
 
@@ -156,13 +169,13 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
   }
 
   public static final class Builder {
-    final Sender sender;
+    final Reporter<Span> spanReporter;
     StaticConfig config = new StaticConfig();
     StatsReceiver stats = DefaultStatsReceiver$.MODULE$.get().scope("zipkin");
 
-    Builder(Sender sender) {
-      if (sender == null) throw new NullPointerException("sender == null");
-      this.sender = sender;
+    Builder(Reporter<Span> spanReporter) {
+      if (spanReporter == null) throw new NullPointerException("spanReporter == null");
+      this.spanReporter = spanReporter;
     }
 
     /**
@@ -179,15 +192,15 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
       return this;
     }
 
-    /** Name of the scope to emit span metrics to. Default "zipkin" */
-    public Builder statsScope(String statsScope) {
-      if (statsScope == null) throw new NullPointerException("statsScope == null");
-      this.stats = DefaultStatsReceiver$.MODULE$.get().scope(statsScope);
+    /** Receiver for unknown event metrics. Defaults to scope "zipkin" */
+    public Builder stats(StatsReceiver stats) {
+      if (stats == null) throw new NullPointerException("stats == null");
+      this.stats = stats;
       return this;
     }
 
     public ZipkinTracer build() {
-      return new ZipkinTracer(sender, config, stats);
+      return new ZipkinTracer(spanReporter, config, stats);
     }
   }
 

@@ -64,7 +64,7 @@ public class ZipkinTracerTest {
   }
 
   @After
-  public void closeTracer() throws Exception {
+  public void closeTracer() {
     tracer.close();
   }
 
@@ -73,7 +73,7 @@ public class ZipkinTracerTest {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
 
-    tracer.reporter.flush();
+    flush();
 
     assertThat(spansSent.take()).isEmpty();
   }
@@ -86,7 +86,7 @@ public class ZipkinTracerTest {
     // client receive reports the span
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
-    tracer.reporter.flush();
+    flush();
 
     assertThat(spansSent.take().stream())
         .flatExtracting(Span::kind)
@@ -112,7 +112,7 @@ public class ZipkinTracerTest {
     // client receive reports the span
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
-    tracer.reporter.flush();
+    flush();
 
     assertThat(spansSent.take().stream())
         .extracting(Span::traceId)
@@ -120,13 +120,13 @@ public class ZipkinTracerTest {
   }
 
   @Test
-  public void reportIncrementsAcceptedMetrics() throws Exception {
+  public void reportIncrementsAcceptedMetrics() {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
-    tracer.reporter.flush();
+    flush();
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
         entry(seq("span_bytes"), 165L),
@@ -138,7 +138,7 @@ public class ZipkinTracerTest {
   }
 
   @Test
-  public void incrementsDropMetricsOnSendError() throws Exception {
+  public void incrementsDropMetricsOnSendError() {
     tracer.close();
     tracer = newTracer(FakeSender.create().onSpans(span -> {
       throw new IllegalStateException(new NullPointerException());
@@ -150,7 +150,7 @@ public class ZipkinTracerTest {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     try {
-      tracer.reporter.flush();
+      flush();
       failBecauseExceptionWasNotThrown(IllegalStateException.class);
     } catch (IllegalStateException e) {
     }
@@ -166,5 +166,9 @@ public class ZipkinTracerTest {
         entry(seq("messages_dropped", "java.lang.IllegalStateException",
             "java.lang.NullPointerException"), 1L)
     );
+  }
+
+  void flush() {
+    ((AsyncReporter) tracer.reporter).flush();
   }
 }
