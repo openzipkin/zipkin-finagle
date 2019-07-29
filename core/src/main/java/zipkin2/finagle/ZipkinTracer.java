@@ -13,7 +13,9 @@
  */
 package zipkin2.finagle;
 
+import com.twitter.finagle.stats.DefaultStatsReceiver$;
 import com.twitter.finagle.stats.StatsReceiver;
+import com.twitter.finagle.tracing.Annotation;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.finagle.tracing.TraceId;
 import com.twitter.finagle.tracing.Tracer;
@@ -23,11 +25,14 @@ import com.twitter.util.Closable;
 import com.twitter.util.Duration;
 import com.twitter.util.Future;
 import com.twitter.util.Time;
+import java.io.Closeable;
+import java.io.IOException;
 import scala.Option;
 import scala.Some;
 import scala.runtime.BoxedUnit;
 import zipkin2.Span;
 import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.Reporter;
 import zipkin2.reporter.Sender;
 
 /**
@@ -51,11 +56,47 @@ import zipkin2.reporter.Sender;
  *     super(new HttpReporter(config.host()), stats, config.initialSampleRate());
  *   }
  * }</pre>
+ *
+ * <p>If you don't need to use service loader, an alternate way to manually configure the tracer is
+ * via {@link #newBuilder(Reporter)}
  */
 // It would be cleaner to obviate SamplingTracer and the dependency on finagle-zipkin-core, but
 // SamplingTracer includes unrelated event logic https://github.com/twitter/finagle/issues/540
 public class ZipkinTracer extends SamplingTracer implements Closable {
-  final AsyncReporter<Span> reporter;
+
+  /**
+   * Normally, Finagle configures the tracer implicitly and through flags. This implies constraints
+   * needed for service loading. Alternatively, you can use this type to explicitly configure any
+   * sender available in Zipkin.
+   *
+   * <p>Ex.
+   * <pre>{@code
+   * // Setup a sender without using Finagle flags like so:
+   * Properties overrides = new Properties();
+   * overrides.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
+   * sender = KafkaSender.newBuilder()
+   *   .bootstrapServers("host1:9092,host2:9092")
+   *   .overrides(overrides)
+   *   .encoding(Encoding.PROTO3)
+   *   .build();
+   *
+   * zipkinStats = stats.scope("zipkin");
+   * spanReporter = AsyncReporter.builder(sender)
+   *   .metrics(new ReporterMetricsAdapter(zipkinStats)) // routes reporter metrics to finagle stats
+   *   .build()
+   *
+   * // Now, use it here, but don't forget to close the sender!
+   * tracer = ZipkinTracer.newBuilder(spanReporter).stats(zipkinStats).build();
+   * }</pre>
+   *
+   * <p><em>Note</em>: You must close the supplied sender externally, after this instance is
+   * closed.
+   */
+  public static Builder newBuilder(Reporter<Span> spanReporter) {
+    return new Builder(spanReporter);
+  }
+
+  final Reporter<Span> reporter;
   final RawZipkinTracer underlying;
 
   protected ZipkinTracer(Sender sender, Config config, StatsReceiver stats) {
@@ -64,11 +105,11 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
         .build(), config, stats);
   }
 
-  ZipkinTracer(AsyncReporter<Span> reporter, Config config, StatsReceiver stats) {
+  ZipkinTracer(Reporter<Span> reporter, Config config, StatsReceiver stats) {
     this(reporter, new RawZipkinTracer(reporter, stats), config);
   }
 
-  private ZipkinTracer(AsyncReporter<Span> reporter, RawZipkinTracer underlying, Config config) {
+  private ZipkinTracer(Reporter<Span> reporter, RawZipkinTracer underlying, Config config) {
     super(underlying, config.initialSampleRate());
     this.reporter = reporter;
     this.underlying = underlying;
@@ -79,7 +120,12 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
   }
 
   @Override public Future<BoxedUnit> close(Time deadline) {
-    reporter.close();
+    if (reporter instanceof Closeable) {
+      try {
+        ((Closeable) reporter).close();
+      } catch (IOException | RuntimeException ignored) {
+      }
+    }
     return underlying.recorder.close(deadline);
   }
 
@@ -98,22 +144,19 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     /**
      * @param stats We generate stats to keep track of traces sent, failures and so on
      */
-    RawZipkinTracer(AsyncReporter<Span> reporter, StatsReceiver stats) {
+    RawZipkinTracer(Reporter<Span> reporter, StatsReceiver stats) {
       this.recorder = new SpanRecorder(reporter, stats, DefaultTimer.getInstance());
     }
 
-    @Override
-    public Option<Object> sampleTrace(TraceId traceId) {
+    @Override public Option<Object> sampleTrace(TraceId traceId) {
       return Some.apply(true);
     }
 
-    @Override
-    public boolean isNull() {
+    @Override public boolean isNull() {
       return false;
     }
 
-    @Override
-    public boolean isActivelyTracing(TraceId traceId) {
+    @Override public boolean isActivelyTracing(TraceId traceId) {
       return true;
     }
 
@@ -121,9 +164,58 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
      * Mutates the Span with whatever new info we have. If we see an "end" annotation we remove the
      * span and send it off.
      */
-    @Override
-    public void record(Record record) {
+    @Override public void record(Record record) {
       recorder.record(record);
+    }
+  }
+
+  public static final class Builder {
+    final Reporter<Span> spanReporter;
+    StaticConfig config = new StaticConfig();
+    StatsReceiver stats = DefaultStatsReceiver$.MODULE$.get().scope("zipkin");
+
+    Builder(Reporter<Span> spanReporter) {
+      if (spanReporter == null) throw new NullPointerException("spanReporter == null");
+      this.spanReporter = spanReporter;
+    }
+
+    /**
+     * Percentage of traces to sample (report to zipkin) in the range [0.0 - 1.0].
+     *
+     * <p>Default is the value of the flag {@code zipkin.initialSampleRate} which if not overridden
+     * is 0.001f (0.1%).
+     */
+    public Builder initialSampleRate(float initialSampleRate) {
+      if (initialSampleRate < 0.0f || initialSampleRate > 1.0f) {
+        throw new IllegalArgumentException("initialSampleRate must be in the range [0.0 - 1.0]");
+      }
+      this.config.initialSampleRate = initialSampleRate;
+      return this;
+    }
+
+    /**
+     * It is possible that later versions of finagle add new types of {@link Annotation}. If this
+     * occurs, the values won't be mapped until an update occurs here. We increment a counter using
+     * below if that occurs.
+     *
+     * @param stats defaults to scope "zipkin"
+     */
+    public Builder stats(StatsReceiver stats) {
+      if (stats == null) throw new NullPointerException("stats == null");
+      this.stats = stats;
+      return this;
+    }
+
+    public ZipkinTracer build() {
+      return new ZipkinTracer(spanReporter, config, stats);
+    }
+  }
+
+  static final class StaticConfig implements Config {
+    float initialSampleRate = zipkin.initialSampleRate$.Flag.apply();
+
+    @Override public float initialSampleRate() {
+      return initialSampleRate;
     }
   }
 }

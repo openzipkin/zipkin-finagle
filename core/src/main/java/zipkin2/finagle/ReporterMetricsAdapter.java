@@ -24,7 +24,10 @@ import scala.collection.Seq;
 import scala.collection.Traversable;
 import zipkin2.reporter.ReporterMetrics;
 
-final class ReporterMetricsAdapter implements ReporterMetrics {
+public final class ReporterMetricsAdapter implements ReporterMetrics {
+  public static ReporterMetrics create(StatsReceiver stats) {
+    return new ReporterMetricsAdapter(stats);
+  }
 
   final Counter spans;
   final Counter spansDropped;
@@ -36,6 +39,7 @@ final class ReporterMetricsAdapter implements ReporterMetrics {
   final AtomicLong spanQueueBytes;
 
   ReporterMetricsAdapter(StatsReceiver stats) {
+    if (stats == null) throw new NullPointerException("stats == null");
     this.spans = stats.counter0("spans");
     this.spanBytes = stats.counter0("span_bytes");
     this.spansDropped = stats.counter0("spans_dropped");

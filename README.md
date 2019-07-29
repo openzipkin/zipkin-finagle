@@ -110,6 +110,31 @@ Tracer tracer = HttpZipkinTracer.create(config,
     new JavaLoggerStatsReceiver(Logger.getAnonymousLogger()));
 ```
 
+### Custom
+
+You may need to use alternative reporters like [zipkin-aws](https://github.com/openzipkin/zipkin-aws/),
+control configuration not available in flags, or change metrics reporting configuration. To do that,
+use `ZipkinReporter.newBuilder()` and supply the arguments you need.
+
+```java
+// Setup a sender without using Finagle flags like so:
+Properties overrides = new Properties();
+overrides.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
+sender = KafkaSender.newBuilder()
+  .bootstrapServers("host1:9092,host2:9092")
+  .overrides(overrides)
+  .encoding(Encoding.PROTO3)
+  .build();
+
+zipkinStats = stats.scope("zipkin");
+spanReporter = AsyncReporter.builder(sender)
+  .metrics(new ReporterMetricsAdapter(zipkinStats)) // routes reporter metrics to finagle stats
+  .build()
+
+// Now, use it here, but don't forget to close the sender!
+tracer = ZipkinTracer.newBuilder(spanReporter).stats(zipkinStats).build();
+```
+
 ## Metrics
 
 The following metrics are reported under a transport-specific category
