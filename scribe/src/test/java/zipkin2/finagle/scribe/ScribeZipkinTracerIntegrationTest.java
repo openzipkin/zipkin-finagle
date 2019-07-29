@@ -46,37 +46,32 @@ public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTe
   InMemoryStorage storage = InMemoryStorage.newBuilder().build();
   ScribeCollector scribe;
 
-  @Before
-  public void start() {
+  @Before public void start() {
     scribe = ScribeCollector.newBuilder().storage(storage).build();
     scribe.start();
   }
 
-  @After
-  public void close() {
+  @After public void close() {
     scribe.close();
   }
 
   Config config = Config.builder().initialSampleRate(1.0f).host("127.0.0.1:9410").build();
 
-  @Override
-  protected ZipkinTracer newTracer() {
+  @Override protected ZipkinTracer newTracer(String localServiceName) {
+    config = config.toBuilder().localServiceName(localServiceName).build();
     return new ScribeZipkinTracer(config, stats);
   }
 
-  @Override
-  protected List<List<Span>> getTraces() {
+  @Override protected List<List<Span>> getTraces() {
     return storage.getTraces();
   }
 
   /** Scribe can only use thrift */
-  @Override
-  protected SpanBytesEncoder encoder() {
+  @Override protected SpanBytesEncoder encoder() {
     return SpanBytesEncoder.THRIFT;
   }
 
-  @Test
-  public void whenScribeIsDown() throws Exception {
+  @Test public void whenScribeIsDown() throws Exception {
     scribe.close();
 
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none));

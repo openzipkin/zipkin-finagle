@@ -32,7 +32,7 @@ public abstract class FinagleSender<C extends ZipkinTracer.Config, Req, Rep> ext
   final Service<Req, Rep> client;
 
   /** close is typically called from a different thread */
-  transient boolean closeCalled;
+  volatile boolean closeCalled;
 
   protected FinagleSender(C config) {
     if (config == null) throw new NullPointerException("config == null");
@@ -65,7 +65,7 @@ public abstract class FinagleSender<C extends ZipkinTracer.Config, Req, Rep> ext
   }
 
   public Future<BoxedUnit> closeFuture() {
-    if (closeCalled) return null;
+    if (closeCalled) return Future.Done();
     closeCalled = true;
     return client.close();
   }

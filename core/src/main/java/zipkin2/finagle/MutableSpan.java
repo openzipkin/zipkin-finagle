@@ -25,6 +25,7 @@ import zipkin2.v1.V1BinaryAnnotation;
 import zipkin2.v1.V1Span;
 
 import static com.twitter.finagle.thrift.thrift.Constants.CLIENT_RECV;
+import static com.twitter.finagle.thrift.thrift.Constants.CLIENT_SEND;
 import static com.twitter.finagle.thrift.thrift.Constants.SERVER_SEND;
 
 final class MutableSpan {
@@ -32,7 +33,7 @@ final class MutableSpan {
   private final Time started;
   private final List<V1Annotation> annotations = new ArrayList<>();
   private final List<V1BinaryAnnotation> binaryAnnotations = new ArrayList<>();
-  private boolean isComplete = false;
+  private boolean isComplete;
   private String service = "unknown";
   private Endpoint endpoint = Endpoints.UNKNOWN;
 
@@ -71,7 +72,6 @@ final class MutableSpan {
     if (annotations.isEmpty()) {
       span.timestamp(timestamp.inMicroseconds());
     }
-
     if (!isComplete &&
         (value.equals(CLIENT_RECV) ||
          value.equals(SERVER_SEND) ||
@@ -111,6 +111,14 @@ final class MutableSpan {
     return this;
   }
 
+  synchronized String getService() {
+    return service;
+  }
+
+  synchronized boolean isComplete() {
+    return isComplete;
+  }
+
   synchronized V1Span toSpan() {
     // fill in the host/service data for all the annotations
     for (V1Annotation a : annotations) {
@@ -118,15 +126,14 @@ final class MutableSpan {
       span.addAnnotation(a.timestamp(), a.value(), ep.toBuilder().serviceName(service).build());
     }
     for (V1BinaryAnnotation ann : binaryAnnotations) {
-      if (ann.stringValue() == null) continue;
       Endpoint ep = Endpoints.boundEndpoint(ann.endpoint());
-      span.addBinaryAnnotation(
-          ann.key(), ann.stringValue(), ep.toBuilder().serviceName(service).build());
+      if (ann.stringValue() == null) { // service annotation
+        span.addBinaryAnnotation(ann.key(), ep);
+      } else {
+        span.addBinaryAnnotation(
+            ann.key(), ann.stringValue(), ep.toBuilder().serviceName(service).build());
+      }
     }
     return span.build();
-  }
-
-  synchronized boolean isComplete() {
-    return isComplete;
   }
 }

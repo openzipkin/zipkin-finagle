@@ -59,7 +59,8 @@ public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTes
     super.createTracer();
   }
 
-  @Override protected ZipkinTracer newTracer() {
+  @Override protected ZipkinTracer newTracer(String localServiceName) {
+    config = config.toBuilder().localServiceName(localServiceName).build();
     return new KafkaZipkinTracer(config, stats);
   }
 
@@ -72,8 +73,7 @@ public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTes
         .collect(toList());
   }
 
-  @Test
-  public void whenKafkaIsDown() throws Exception {
+  @Test public void whenKafkaIsDown() throws Exception {
     broker.stop();
 
     // Make a new tracer that fails faster than 60 seconds

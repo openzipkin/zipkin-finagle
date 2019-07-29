@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenZipkin Authors
+ * Copyright 2016-2019 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -29,8 +29,12 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import scala.runtime.BoxedUnit;
+import zipkin2.Endpoint;
+import zipkin2.Span;
 import zipkin2.reporter.Reporter;
 import zipkin2.v1.V1SpanConverter;
+
+import static zipkin2.Span.Kind.CLIENT;
 
 final class SpanRecorder extends AbstractClosable {
   private static final String ERROR_FORMAT = "%s: %s"; // annotation: errorMessage
@@ -43,14 +47,16 @@ final class SpanRecorder extends AbstractClosable {
    */
   private final StatsReceiver unhandledReceiver;
   private final TimerTask flusher;
+  private final String localServiceName;
 
-  SpanRecorder(Reporter<zipkin2.Span> reporter, StatsReceiver stats, Timer timer) {
+  SpanRecorder(Reporter<Span> reporter, StatsReceiver stats, Timer timer, String localServiceName) {
     this.reporter = reporter;
     this.unhandledReceiver = stats.scope("record").scope("unhandled");
     this.flusher = timer.schedule(ttl.$div(2L), () -> {
       flush(ttl.ago());
       return null;
     });
+    this.localServiceName = "unknown".equals(localServiceName) ? null : localServiceName;
   }
 
   /**
@@ -169,8 +175,29 @@ final class SpanRecorder extends AbstractClosable {
   }
 
   void report(MutableSpan span) {
-    for (zipkin2.Span v2span : V1SpanConverter.create().convert(span.toSpan())) {
-      reporter.report(v2span);
+    // Override the local service name
+    String oldService = null;
+    if (localServiceName != null) {
+      oldService = span.getService();
+      if ("unknown".equals(oldService)) oldService = null;
+      span.setServiceName(localServiceName);
     }
+    for (zipkin2.Span v2span : V1SpanConverter.create().convert(span.toSpan())) {
+      v2span = moveServiceNameToRemoteServiceName(v2span, oldService);
+      reporter.report(moveServiceNameToRemoteServiceName(v2span, oldService));
+    }
+  }
+
+  static Span moveServiceNameToRemoteServiceName(Span v2span, String oldService) {
+    if (CLIENT.equals(v2span.kind()) && oldService != null) {
+      Endpoint remoteEndpoint = v2span.remoteEndpoint();
+      if (remoteEndpoint == null) {
+        remoteEndpoint = Endpoint.newBuilder().serviceName(oldService).build();
+      } else {
+        remoteEndpoint = remoteEndpoint.toBuilder().serviceName(oldService).build();
+      }
+      v2span = v2span.toBuilder().remoteEndpoint(remoteEndpoint).build();
+    }
+    return v2span;
   }
 }

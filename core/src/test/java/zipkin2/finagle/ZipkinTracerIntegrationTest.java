@@ -21,41 +21,43 @@ import com.twitter.finagle.tracing.Annotation.ServerRecv$;
 import com.twitter.finagle.tracing.Annotation.ServerSend$;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
-import com.twitter.util.Time;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import zipkin2.DependencyLink;
 import zipkin2.Endpoint;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesEncoder;
+import zipkin2.internal.DependencyLinker;
 
+import static com.twitter.util.Time.fromMilliseconds;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.Option.empty;
 import static scala.collection.JavaConverters.mapAsJavaMap;
+import static zipkin2.finagle.FinagleTestObjects.TODAY;
+import static zipkin2.finagle.FinagleTestObjects.child;
+import static zipkin2.finagle.FinagleTestObjects.root;
 
 public abstract class ZipkinTracerIntegrationTest {
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  @Rule public ExpectedException thrown = ExpectedException.none();
   protected InMemoryStatsReceiver stats = new InMemoryStatsReceiver();
   protected ZipkinTracer tracer;
 
-  @After
-  public void closeTracer() {
+  @After public void closeTracer() {
     tracer.close();
     stats.clear();
   }
 
-  @Before
-  public void createTracer() {
-    tracer = newTracer();
+  @Before public void createTracer() {
+    tracer = newTracer("unknown");
   }
 
-  protected abstract ZipkinTracer newTracer();
+  protected abstract ZipkinTracer newTracer(String localServiceName);
 
   protected abstract List<List<Span>> getTraces() throws Exception;
 
@@ -69,45 +71,39 @@ public abstract class ZipkinTracerIntegrationTest {
   }
 
   @Test public void multipleSpansGoIntoSameMessage() throws Exception {
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), empty()));
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), ServerRecv$.MODULE$, empty()));
-    tracer.record(new Record(
-        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ServerSend$.MODULE$, empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), ServerRecv$.MODULE$, empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), ServerSend$.MODULE$, empty()));
 
-    tracer.record(new Record(
-        FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), empty()));
-    tracer.record(new Record(
-        FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), empty()));
-    tracer.record(new Record(
-                      FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY), ClientSend$.MODULE$, empty()));
-    tracer.record(new Record(
-        FinagleTestObjects.child, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ClientRecv$.MODULE$, empty()));
+    tracer.record(new Record(child, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(child, fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(child, fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
+    tracer.record(new Record(child, fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
     Thread.sleep(2000); // the AsyncReporter thread has a default interval of 1s
 
     Endpoint web = Endpoint.newBuilder().serviceName("web").ip("127.0.0.1").build();
-    Span span1 =
-        Span.newBuilder()
-            .traceId(FinagleTestObjects.root.traceId().toString())
-            .id(FinagleTestObjects.root.spanId().toLong())
-            .name("get")
-            .timestamp(FinagleTestObjects.TODAY * 1000)
-            .duration(1000L)
-            .kind(Span.Kind.SERVER)
-            .localEndpoint(web)
-            .build();
+    Span server = Span.newBuilder()
+        .traceId(root.traceId().toString())
+        .id(root.spanId().toLong())
+        .name("get")
+        .timestamp(TODAY * 1000)
+        .duration(1000L)
+        .kind(Span.Kind.SERVER)
+        .localEndpoint(web)
+        .build();
 
-    Span span2 = span1.toBuilder()
+    Span client = server.toBuilder()
         .kind(Span.Kind.CLIENT)
-        .parentId(FinagleTestObjects.child.parentId().toLong())
-        .id(FinagleTestObjects.child.spanId().toLong()).build();
+        .parentId(child.parentId().toLong())
+        .id(child.spanId().toLong()).build();
 
-    assertThat(getTraces()).containsExactly(asList(span1, span2));
+    assertThat(getTraces()).containsExactly(asList(server, client));
 
-    long expectedSpanBytes = encoder().sizeInBytes(span1) + encoder().sizeInBytes(span2);
+    long expectedSpanBytes = encoder().sizeInBytes(server) + encoder().sizeInBytes(client);
     long expectedMessageSize =
-        messageSizeInBytes(asList(encoder().encode(span1), encoder().encode(span2)));
+        messageSizeInBytes(asList(encoder().encode(server), encoder().encode(client)));
 
     assertThat(mapAsJavaMap(stats.counters())).containsExactly(
         entry(FinagleTestObjects.seq("span_bytes"), expectedSpanBytes),
@@ -115,6 +111,28 @@ public abstract class ZipkinTracerIntegrationTest {
         entry(FinagleTestObjects.seq("spans_dropped"), 0L),
         entry(FinagleTestObjects.seq("message_bytes"), expectedMessageSize),
         entry(FinagleTestObjects.seq("messages"), 1L)
+    );
+  }
+
+  @Test public void configOverridesLocalServiceName_client() throws Exception {
+    tracer.close();
+    tracer = newTracer("web");
+
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY), ServerRecv$.MODULE$, empty()));
+    tracer.record(new Record(root, fromMilliseconds(TODAY + 1), ServerSend$.MODULE$, empty()));
+
+    // Here we simulate someone setting the client ServiceName to the remote host
+    tracer.record(new Record(child, fromMilliseconds(TODAY), new ServiceName("app"), empty()));
+    tracer.record(new Record(child, fromMilliseconds(TODAY), new Rpc("get"), empty()));
+    tracer.record(new Record(child, fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
+    tracer.record(new Record(child, fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
+
+    Thread.sleep(2000); // the AsyncReporter thread has a default interval of 1s
+
+    assertThat(new DependencyLinker().putTrace(getTraces().get(0)).link()).containsExactly(
+        DependencyLink.newBuilder().parent("web").child("app").callCount(1).build()
     );
   }
 }
