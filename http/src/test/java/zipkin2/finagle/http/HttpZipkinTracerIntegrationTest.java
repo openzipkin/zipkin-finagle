@@ -32,22 +32,25 @@ import zipkin2.Span;
 import zipkin2.finagle.FinagleTestObjects;
 import zipkin2.finagle.ZipkinTracer;
 import zipkin2.finagle.ZipkinTracerIntegrationTest;
+import zipkin2.finagle.http.HttpZipkinTracer.Config;
 import zipkin2.junit.ZipkinRule;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.collection.JavaConverters.mapAsJavaMap;
+import static zipkin2.finagle.FinagleTestObjects.TODAY;
+import static zipkin2.finagle.FinagleTestObjects.root;
 
 public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest {
-  final Option<Duration> none = Option.empty(); // avoid having to force generics
-  @Rule
-  public ZipkinRule http = new ZipkinRule();
+  @Rule public ZipkinRule http = new ZipkinRule();
   String host = "localhost:" + URI.create(http.httpUrl()).getPort();
-  HttpZipkinTracer.Config
-      config = HttpZipkinTracer.Config.builder().initialSampleRate(1.0f).host(host).build();
+  Config config = Config.builder().initialSampleRate(1.0f).host(host).build();
 
-  @Override protected ZipkinTracer newTracer() {
+  final Option<Duration> none = Option.empty(); // avoid having to force generics
+
+  @Override protected ZipkinTracer newTracer(String localServiceName) {
+    config = config.toBuilder().localServiceName(localServiceName).build();
     return new HttpZipkinTracer(config, stats);
   }
 
@@ -55,15 +58,13 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
     return http.getTraces();
   }
 
-  @Test
-  public void whenHttpIsDown() throws Exception {
+  @Test public void whenHttpIsDown() throws Exception {
     http.shutdown(); // shutdown the normal zipkin rule
 
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), none));
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), none));
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), ClientSend$.MODULE$, none));
-    tracer.record(new Record(
-        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ClientRecv$.MODULE$, none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, none));
+    tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, none));
 
     Thread.sleep(1500); // wait for http request attempt to go through
 
@@ -88,10 +89,10 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
 
     // create instructions to create a complete RPC span
     List<Record> records = asList(
-        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), none),
-        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), none),
-        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), ClientSend$.MODULE$, none),
-        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ClientRecv$.MODULE$, none)
+        new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none),
+        new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), none),
+        new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, none),
+        new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, none)
     );
 
     MockWebServer server = new MockWebServer();

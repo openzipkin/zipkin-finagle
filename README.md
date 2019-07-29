@@ -43,8 +43,8 @@ Global flags can either be set by system property, or commandline argument (ex i
 
 Ex the following are equivalent ways to trace every request:
 ```bash
-$ java -Dzipkin.localServiceName=favestar  -Dzipkin.initialSampleRate=1.0 ...
-$ java -cp my-twitter-server.jar -zipkin.localServiceName=favestar -zipkin.initialSampleRate=1.0
+$ java -Dzipkin.localServiceName=favstar  -Dzipkin.initialSampleRate=1.0 ...
+$ java -cp my-twitter-server.jar -zipkin.localServiceName=favstar -zipkin.initialSampleRate=1.0
 ```
 
 Here are the flags that apply to all transports:

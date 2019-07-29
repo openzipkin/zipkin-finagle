@@ -89,7 +89,7 @@ public class ZipkinTracerTest {
   }
 
   @Test public void configOverridesLocalServiceName_client() throws Exception {
-    tracer = spanReporter("favstar");
+    tracer = tracerWithLocalServiceName("favstar");
 
     recordClientSpan(root);
 
@@ -100,7 +100,7 @@ public class ZipkinTracerTest {
   }
 
   @Test public void configOverridesLocalServiceName_client_combines() throws Exception {
-    tracer = spanReporter("favstar");
+    tracer = tracerWithLocalServiceName("favstar");
 
     tracer.record(new Record(root, fromMilliseconds(TODAY), new Annotation.LocalAddr(
         new InetSocketAddress("1.2.3.3", 443)), empty()));
@@ -117,7 +117,7 @@ public class ZipkinTracerTest {
   }
 
   @Test public void configOverridesLocalServiceName_server() throws Exception {
-    tracer = spanReporter("favstar");
+    tracer = tracerWithLocalServiceName("favstar");
 
     recordServerSpan(root);
 
@@ -209,7 +209,7 @@ public class ZipkinTracerTest {
     ((AsyncReporter) tracer.reporter).flush();
   }
 
-  ZipkinTracer spanReporter(String localServiceName) {
+  ZipkinTracer tracerWithLocalServiceName(String localServiceName) {
     return newTracer(reporterBuilder(spansSent::add)
             .messageMaxBytes(500), // RPC spans are bigger than local ones
         localServiceName);

@@ -183,10 +183,14 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     }
 
     /**
-     * The localEndpoint.serviceName to use for all spans sent to Zipkin.
+     * Lower-case label of the remote node in the service graph, such as "favstar". Avoid names
+     * with variables or unique identifiers embedded.
      *
-     * <p>Default is to look at the {@link Annotation.ServiceName} annotation. However, as clients
-     * often set this to the destination host, you may with to override this here.
+     * <p>When unset, the service name is derived from {@link Annotation.ServiceName} which is
+     * often incorrectly set to the remote service name.
+     *
+     * <p>This is a primary label for trace lookup and aggregation, so it should be intuitive and
+     * consistent. Many use a name from service discovery.
      */
     public Builder localServiceName(String localServiceName) {
       if (localServiceName == null) throw new NullPointerException("localServiceName == null");
