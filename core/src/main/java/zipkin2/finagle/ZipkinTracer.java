@@ -15,6 +15,7 @@ package zipkin2.finagle;
 
 import com.twitter.finagle.stats.DefaultStatsReceiver$;
 import com.twitter.finagle.stats.StatsReceiver;
+import com.twitter.finagle.tracing.Annotation;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.finagle.tracing.TraceId;
 import com.twitter.finagle.tracing.Tracer;
@@ -192,7 +193,13 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
       return this;
     }
 
-    /** Receiver for unknown event metrics. Defaults to scope "zipkin" */
+    /**
+     * It is possible that later versions of finagle add new types of {@link Annotation}. If this
+     * occurs, the values won't be mapped until an update occurs here. We increment a counter using
+     * below if that occurs.
+     *
+     * @param stats defaults to scope "zipkin"
+     */
     public Builder stats(StatsReceiver stats) {
       if (stats == null) throw new NullPointerException("stats == null");
       this.stats = stats;

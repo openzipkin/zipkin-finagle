@@ -56,11 +56,13 @@ public class ZipkinTracerTest {
   ZipkinTracer tracer = newTracer(FakeSender.create().onSpans(spansSent::add));
 
   ZipkinTracer newTracer(Sender sender) {
-    return new ZipkinTracer(AsyncReporter.builder(sender)
+    return ZipkinTracer.newBuilder(AsyncReporter.builder(sender)
         .messageTimeout(0, TimeUnit.MILLISECONDS)
         .messageMaxBytes(176 + 5) // size of a simple span w/ 128-bit trace ID + list overhead
         .metrics(new ReporterMetricsAdapter(stats))
-        .build(), () -> 1.0f, stats);
+        .build())
+        .initialSampleRate(1.0f)
+        .stats(stats).build();
   }
 
   @After
