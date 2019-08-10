@@ -141,6 +141,14 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     return close(Time.Bottom());
   }
 
+  /**
+   * There are two queues here. The recorder has in-flight data about operations not yet complete.
+   * The reporter (usually) has a queue of spans for operations completed, not yet sent to Zipkin.
+   *
+   * <p>The close process tries to avoid dropping data on the floor by first flushing any in-flight
+   * operations in the recorder (ideally none), then any spans waiting for the next send interval to
+   * Zipkin.
+   */
   @Override public Future<BoxedUnit> close(Time deadline) {
     Future<BoxedUnit> result = underlying.recorder.close(deadline);
     if (!(reporter instanceof Closeable)) return result;
