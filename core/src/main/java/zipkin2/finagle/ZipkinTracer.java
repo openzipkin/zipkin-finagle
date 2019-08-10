@@ -29,6 +29,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import scala.Option;
 import scala.Some;
+import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
 import zipkin2.Span;
 import zipkin2.internal.Nullable;
@@ -90,8 +91,28 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
    * tracer = ZipkinTracer.newBuilder(spanReporter).stats(zipkinStats).build();
    * }</pre>
    *
-   * <p><em>Note</em>: You must close the supplied sender externally, after this instance is
-   * closed.
+   * <h3>On closing resources</h3>
+   * The resulting tracer will attempt to close an underlying reporter if it implements {@link
+   * Closeable}. It is best to use normal tools like pre-destroy hooks to close resources in your
+   * application. If you somehow cannot control your resources, yet can invoke this, consider
+   * wrapping the input as a closeable to coordinate an ordered shutdown.
+   *
+   * <p>Ex.
+   * <pre>{@code
+   * class ReporterThatClosesSender implements Reporter<Span>, Closeable {
+   *   final Sender sender;
+   *   final AsyncReporter<Span> reporter;
+   *
+   *   @Override public void close() throws IOException {
+   *     reporter.close();
+   *     sender.close();
+   *   }
+   *
+   *   @Override public void report(Span span) {
+   *     reporter.report(span);
+   *   }
+   * }
+   * }</pre>
    */
   public static Builder newBuilder(Reporter<Span> spanReporter) {
     return new Builder(spanReporter);
@@ -120,14 +141,26 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     return close(Time.Bottom());
   }
 
+  /**
+   * There are two queues here. The recorder has in-flight data about operations not yet complete.
+   * The reporter (usually) has a queue of spans for operations completed, not yet sent to Zipkin.
+   *
+   * <p>The close process tries to avoid dropping data on the floor by first flushing any in-flight
+   * operations in the recorder (ideally none), then any spans waiting for the next send interval to
+   * Zipkin.
+   */
   @Override public Future<BoxedUnit> close(Time deadline) {
-    if (reporter instanceof Closeable) {
-      try {
-        ((Closeable) reporter).close();
-      } catch (IOException | RuntimeException ignored) {
+    Future<BoxedUnit> result = underlying.recorder.close(deadline);
+    if (!(reporter instanceof Closeable)) return result;
+    return result.onSuccess(new AbstractFunction1<BoxedUnit, BoxedUnit>() {
+      @Override public BoxedUnit apply(BoxedUnit v1) {
+        try {
+          ((Closeable) reporter).close();
+        } catch (IOException | RuntimeException ignored) {
+        }
+        return BoxedUnit.UNIT;
       }
-    }
-    return underlying.recorder.close(deadline);
+    });
   }
 
   @Override public Future<BoxedUnit> close(Duration after) {
@@ -136,6 +169,7 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
 
   protected interface Config {
     @Nullable String localServiceName();
+
     /** How much data to collect. Default sample rate 0.001 (0.1%). Max is 1, min 0. */
     float initialSampleRate();
   }
@@ -183,8 +217,8 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
     }
 
     /**
-     * Lower-case label of the remote node in the service graph, such as "favstar". Avoid names
-     * with variables or unique identifiers embedded.
+     * Lower-case label of the remote node in the service graph, such as "favstar". Avoid names with
+     * variables or unique identifiers embedded.
      *
      * <p>When unset, the service name is derived from {@link Annotation.ServiceName} which is
      * often incorrectly set to the remote service name.
