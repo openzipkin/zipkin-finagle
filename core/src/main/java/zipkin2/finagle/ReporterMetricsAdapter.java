@@ -20,8 +20,8 @@ import com.twitter.util.Throwables;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import scala.collection.Iterator;
-import scala.collection.Seq;
-import scala.collection.Traversable;
+import scala.collection.Iterable;
+import scala.collection.immutable.Seq;
 import zipkin2.reporter.ReporterMetrics;
 
 public final class ReporterMetricsAdapter implements ReporterMetrics {
@@ -56,8 +56,11 @@ public final class ReporterMetricsAdapter implements ReporterMetrics {
 
   @Override public void incrementMessagesDropped(Throwable cause) {
     if (cause instanceof FinagleSender.WrappedException) cause = cause.getCause();
-    Seq<Traversable<String>> paths = Throwables.mkString(cause).inits().toSeq();
-    for (Iterator<Traversable<String>> i = paths.iterator(); i.hasNext();) {
+    Seq<String> a = Throwables.mkString(cause);
+    Iterator<Iterable> i = a.inits();
+    //    Seq<Iterable<String>> paths = Throwables.mkString(cause).inits().toSeq();
+    //    for (Iterator<Seq<String>> i = paths.iterator(); i.hasNext();) {
+    for (; i.hasNext();) {
       messagesDropped.counter(i.next().toSeq()).incr();
     }
   }

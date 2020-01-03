@@ -19,11 +19,11 @@
 
   <parent>
     <groupId>io.zipkin.finagle2</groupId>
-    <artifactId>zipkin-finagle-parent_2.12</artifactId>
+    <artifactId>zipkin-finagle-parent_2.13</artifactId>
     <version>2.1.7-SNAPSHOT</version>
   </parent>
 
-  <artifactId>zipkin-finagle_2.12</artifactId>
+  <artifactId>zipkin-finagle_2.13</artifactId>
   <name>Zipkin Finagle: Core</name>
 
   <properties>

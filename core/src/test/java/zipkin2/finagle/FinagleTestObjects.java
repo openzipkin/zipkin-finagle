@@ -20,7 +20,8 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import scala.Option;
 import scala.collection.JavaConverters;
-import scala.collection.mutable.Seq;
+import scala.collection.immutable.Seq;
+import scala.collection.immutable.Seq$;
 
 import static java.util.Arrays.asList;
 import static scala.Option.empty;
@@ -34,7 +35,7 @@ public final class FinagleTestObjects {
       SpanId.fromString("0f28590523a46541").get(), empty(), Flags$.MODULE$.apply());
 
   public static Seq<String> seq(String... entries) {
-    return JavaConverters.asScalaBuffer(asList(entries));
+      return Seq$.MODULE$.from(JavaConverters.asScalaBuffer(asList(entries)));
   }
 
   static long midnightUTC(long epochMillis) {
