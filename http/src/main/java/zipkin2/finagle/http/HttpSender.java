@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -64,7 +64,7 @@ final class HttpSender extends FinagleSender<HttpZipkinTracer.Config, Request, R
 
   @Override protected Request makeRequest(List<byte[]> spans) throws IOException {
     byte[] json = BytesMessageEncoder.JSON.encode(spans);
-    Request request = Request.apply(POST, "/api/v2/spans");
+    Request request = Request.apply(POST, config.path());
     request.headerMap().add("Host", config.hostHeader());
     request.headerMap().add("Content-Type", "application/json");
     // Eventhough finagle compression flag exists, it only works for servers!

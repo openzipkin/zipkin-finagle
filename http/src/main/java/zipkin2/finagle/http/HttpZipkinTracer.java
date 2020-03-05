@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -28,7 +28,6 @@ import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
 import zipkin.localServiceName$;
 import zipkin2.finagle.ZipkinTracer;
-import zipkin2.internal.Nullable;
 
 @AutoService(Tracer.class)
 public final class HttpZipkinTracer extends ZipkinTracer {
@@ -85,6 +84,7 @@ public final class HttpZipkinTracer extends ZipkinTracer {
       return new AutoValue_HttpZipkinTracer_Config.Builder()
           .hostHeader(zipkin.http.hostHeader$.Flag.apply())
           .host(zipkin.http.host$.Flag.apply())
+          .path(zipkin.http.path$.Flag.apply())
           .compressionEnabled(zipkin.http.compressionEnabled$.Flag.apply())
           .localServiceName(localServiceName$.Flag.apply())
           .initialSampleRate(zipkin.initialSampleRate$.Flag.apply());
@@ -97,6 +97,8 @@ public final class HttpZipkinTracer extends ZipkinTracer {
     abstract String hostHeader();
 
     abstract boolean compressionEnabled();
+
+    abstract String path();
 
     @AutoValue.Builder
     public abstract static class Builder {
@@ -114,6 +116,9 @@ public final class HttpZipkinTracer extends ZipkinTracer {
 
       /** The network location of the Zipkin http service. Defaults to "localhost:9411" */
       public abstract Builder host(Name host);
+
+      /** The path to the Zipkin endpoint relative to the host. Defaults to "/api/v2/spans" */
+      public abstract Builder path(String path);
 
       /** Shortcut for a {@link #host(Name)} encoded as a String */
       public final Builder host(String host) {
