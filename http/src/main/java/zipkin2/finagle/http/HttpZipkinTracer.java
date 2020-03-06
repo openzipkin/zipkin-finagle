@@ -86,6 +86,8 @@ public final class HttpZipkinTracer extends ZipkinTracer {
           .hostHeader(zipkin.http.hostHeader$.Flag.apply())
           .host(zipkin.http.host$.Flag.apply())
           .compressionEnabled(zipkin.http.compressionEnabled$.Flag.apply())
+          .tlsEnabled(zipkin.http.tlsEnabled$.Flag.apply())
+          .tlsValidationEnabled(zipkin.http.tlsValidationEnabled$.Flag.apply())
           .localServiceName(localServiceName$.Flag.apply())
           .initialSampleRate(zipkin.initialSampleRate$.Flag.apply());
     }
@@ -95,6 +97,10 @@ public final class HttpZipkinTracer extends ZipkinTracer {
     abstract Name host();
 
     abstract String hostHeader();
+
+    abstract boolean tlsEnabled();
+
+    abstract boolean tlsValidationEnabled();
 
     abstract boolean compressionEnabled();
 
@@ -128,6 +134,12 @@ public final class HttpZipkinTracer extends ZipkinTracer {
 
       /** @see ZipkinTracer.Config#initialSampleRate() */
       public abstract Builder initialSampleRate(float initialSampleRate);
+
+      /** Whether or not the Zipkin host uses TLS. Defaults to false */
+      public abstract Builder tlsEnabled(boolean tlsEnabled);
+
+      /** Whether or not to enable TLS validation for the TLS-enabled Zipkin host */
+      public abstract Builder tlsValidationEnabled(boolean tlsValidationEnabled);
 
       public abstract Config build();
     }

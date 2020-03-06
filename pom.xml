@@ -54,6 +54,7 @@
     <log4j.version>2.12.0</log4j.version>
     <auto-value.version>1.6.3</auto-value.version>
     <zipkin-reporter.version>2.11.0</zipkin-reporter.version>
+    <okhttp.version>4.3.0</okhttp.version>
 
     <maven-failsafe-plugin.version>3.0.0-M3</maven-failsafe-plugin.version>
     <license-maven-plugin.version>3.0</license-maven-plugin.version>
@@ -164,6 +165,16 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-1.2-api</artifactId>
         <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>okhttp-tls</artifactId>
+        <version>${okhttp.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>mockwebserver</artifactId>
+        <version>${okhttp.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -65,6 +65,8 @@ Flag | Default | Description
 zipkin.http.host | localhost:9411 | The network location of the Zipkin http service. See http://twitter.github.io/finagle/guide/Names.html
 zipkin.http.hostHeader | zipkin | The Host header used when sending spans to Zipkin
 zipkin.http.compressionEnabled | true | True implies that spans will be gzipped before transport
+zipkin.http.tlsEnabled | false | Whether or not the Zipkin host uses TLS
+zipkin.http.tlsValidationEnabled | true | Whether or not to enable TLS validation for the Zipkin host when TLS is enabled
 
 Ex. Here's how to configure the Zipkin server with a system property:
 ```bash

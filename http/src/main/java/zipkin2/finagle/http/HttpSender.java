@@ -57,9 +57,16 @@ final class HttpSender extends FinagleSender<HttpZipkinTracer.Config, Request, R
     // https://groups.google.com/forum/#!topic/finaglers/LqVVVOr2EMM
     Stack<ServiceFactory<Request, Response>> stack =
         Http$.MODULE$.client().stack().remove(new Stack.Role("TraceInitializerFilter"));
-    return new Http.Client(stack, Http.Client$.MODULE$.apply$default$2())
-        .withTracer(new NullTracer())
-        .newService(config.host(), "zipkin-http");
+    Http.Client client = new Http.Client(stack, Http.Client$.MODULE$.apply$default$2())
+        .withTracer(new NullTracer());
+    if (config.tlsEnabled()) {
+      if (config.tlsValidationEnabled()) {
+        client = client.withTls(config.hostHeader());
+      } else {
+        client = client.withTlsWithoutValidation();
+      }
+    }
+    return client.newService(config.host(), "zipkin-http");
   }
 
   @Override protected Request makeRequest(List<byte[]> spans) throws IOException {
