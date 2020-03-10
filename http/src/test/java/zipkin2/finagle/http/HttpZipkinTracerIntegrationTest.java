@@ -20,11 +20,15 @@ import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Duration;
 import com.twitter.util.Time;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import okhttp3.tls.HandshakeCertificates;
+import okhttp3.tls.HeldCertificate;
 import org.junit.Rule;
 import org.junit.Test;
 import scala.Option;
@@ -38,6 +42,7 @@ import zipkin2.junit.ZipkinRule;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.Assert.assertNotNull;
 import static scala.collection.JavaConverters.mapAsJavaMap;
 import static zipkin2.finagle.FinagleTestObjects.TODAY;
 import static zipkin2.finagle.FinagleTestObjects.root;
@@ -118,5 +123,56 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
     } finally {
       server.shutdown();
     }
+  }
+
+  @Test public void tls() throws Exception {
+    http.shutdown(); // shutdown the normal zipkin rule
+
+    // create instructions to create a complete RPC span
+    List<Record> records = asList(
+        new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none),
+        new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), none),
+        new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, none),
+        new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, none)
+    );
+
+    MockWebServer server = createMockWebServerWithTLS();
+
+    config = config.toBuilder()
+        .host("localhost:" + server.getPort())
+        .tlsEnabled(true)
+        .tlsValidationEnabled(false)
+        .build();
+    try {
+      List<RecordedRequest> requests = new ArrayList<>();
+
+      // recreate the tracer with the tls configuration
+      closeTracer();
+      createTracer();
+
+      // write a complete span so that it gets reported
+      records.forEach(tracer::record);
+
+      // block until the request arrived
+      requests.add(server.takeRequest());
+
+      // we expect the request to have a TLS version specified
+      assertNotNull(requests.get(0).getTlsVersion());
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  MockWebServer createMockWebServerWithTLS() throws UnknownHostException {
+    MockWebServer server = new MockWebServer();
+    String localhost = InetAddress.getByName("localhost").getCanonicalHostName();
+    HeldCertificate localhostCertificate = new HeldCertificate.Builder()
+        .addSubjectAlternativeName(localhost)
+        .build();
+    HandshakeCertificates serverCertificates = new HandshakeCertificates.Builder()
+        .heldCertificate(localhostCertificate)
+        .build();
+    server.useHttps(serverCertificates.sslSocketFactory(), false);
+    return server;
   }
 }
