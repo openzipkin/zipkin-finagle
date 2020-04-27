@@ -50,7 +50,7 @@
 
     <!-- version numbers that are used more than once -->
     <scala.binary.version>2.12</scala.binary.version>
-    <finagle.version>20.4.0</finagle.version>
+    <finagle.version>20.4.1</finagle.version>
     <log4j.version>2.12.0</log4j.version>
     <auto-value.version>1.6.3</auto-value.version>
     <zipkin-reporter.version>2.11.0</zipkin-reporter.version>
