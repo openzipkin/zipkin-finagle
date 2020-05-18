@@ -36,7 +36,7 @@ import zipkin2.Span;
 import zipkin2.codec.SpanBytesDecoder;
 import zipkin2.finagle.FinagleTestObjects;
 import zipkin2.finagle.ZipkinTracer;
-import zipkin2.finagle.ZipkinTracerIntegrationTest;
+import zipkin2.finagle.ZipkinTracerIT;
 import zipkin2.reporter.kafka.KafkaSender;
 
 import static java.util.stream.Collectors.toList;
@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static scala.collection.JavaConverters.mapAsJavaMap;
 
-public class KafkaZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest {
+public class KafkaZipkinTracerIT extends ZipkinTracerIT {
 
   final Option<Duration> none = Option.empty(); // avoid having to force generics
   EphemeralKafkaBroker broker = EphemeralKafkaBroker.create();

@@ -317,6 +317,15 @@
               </java.util.logging.manager>
             </systemPropertyVariables>
           </configuration>
+          <executions>
+            <execution>
+              <id>integration-test</id>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
 
         <!-- manual only as CI keeps breaking due to incorrect git dates -->
