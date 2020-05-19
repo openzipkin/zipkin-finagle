@@ -43,7 +43,7 @@ import static zipkin2.finagle.FinagleTestObjects.TODAY;
 import static zipkin2.finagle.FinagleTestObjects.child;
 import static zipkin2.finagle.FinagleTestObjects.root;
 
-public abstract class ZipkinTracerIT {
+public abstract class ITZipkinTracer {
   @Rule public ExpectedException thrown = ExpectedException.none();
   protected InMemoryStatsReceiver stats = new InMemoryStatsReceiver();
   protected ZipkinTracer tracer;

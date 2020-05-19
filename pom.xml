@@ -56,7 +56,7 @@
     <zipkin-reporter.version>2.11.0</zipkin-reporter.version>
     <okhttp.version>4.3.0</okhttp.version>
 
-    <maven-failsafe-plugin.version>3.0.0-M3</maven-failsafe-plugin.version>
+    <maven-failsafe-plugin.version>3.0.0-M4</maven-failsafe-plugin.version>
     <license-maven-plugin.version>3.0</license-maven-plugin.version>
   </properties>
 
@@ -320,6 +320,7 @@
           <executions>
             <execution>
               <id>integration-test</id>
+              <phase>verify</phase>
               <goals>
                 <goal>integration-test</goal>
                 <goal>verify</goal>
