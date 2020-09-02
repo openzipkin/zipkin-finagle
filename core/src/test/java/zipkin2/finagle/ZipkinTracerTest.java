@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -44,7 +44,6 @@ import zipkin2.reporter.AsyncReporter;
 import static com.twitter.util.Time.fromMilliseconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static scala.Option.empty;
 import static scala.collection.JavaConverters.mapAsJavaMap;
 import static zipkin2.finagle.FinagleTestObjects.TODAY;
@@ -186,11 +185,7 @@ public class ZipkinTracerTest {
     tracer.record(new Record(root, fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
     tracer.record(new Record(root, fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
-    try {
-      flush();
-      failBecauseExceptionWasNotThrown(IllegalStateException.class);
-    } catch (IllegalStateException e) {
-    }
+    flush();
 
     assertThat(mapAsJavaMap(stats.counters())).containsOnly(
         entry(seq("spans"), 1L),
