@@ -119,7 +119,12 @@ if is_pull_request; then
 elif is_travis_branch_master; then
   ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests deploy
 
+  # Do this again for Scala 2.13 as BinTray allows re-uploading to the same version
+  find . -type f -name pom.xml -exec sed -i 's/_2.12/_2.13/g' {} \;
+  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests clean deploy
+
   # If the deployment succeeded, sync it to Maven Central. Note: this needs to be done once per project, not module, hence -N
+  # This should sync both scala versions _2.12 and _2.13
   if is_release_commit; then
     ./mvnw --batch-mode -s ./.settings.xml -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
   fi
