@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,10 +19,10 @@ import com.twitter.finagle.tracing.TraceId;
 import java.util.Calendar;
 import java.util.TimeZone;
 import scala.Option;
-import scala.collection.JavaConverters;
-import scala.collection.mutable.Seq;
+import scala.collection.immutable.Seq;
+import scala.collection.immutable.Seq$;
+import scala.collection.mutable.Builder;
 
-import static java.util.Arrays.asList;
 import static scala.Option.empty;
 
 public final class FinagleTestObjects {
@@ -34,7 +34,10 @@ public final class FinagleTestObjects {
       SpanId.fromString("0f28590523a46541").get(), empty(), Flags$.MODULE$.apply());
 
   public static Seq<String> seq(String... entries) {
-    return JavaConverters.asScalaBuffer(asList(entries));
+    // Raw Seq param to avoid generics conflict between scala 2.12 and 2.13
+    Builder builder = Seq$.MODULE$.newBuilder();
+    for (String entry: entries) builder.$plus$eq(entry);
+    return (Seq<String>) builder.result();
   }
 
   static long midnightUTC(long epochMillis) {
