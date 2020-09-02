@@ -35,9 +35,9 @@ public final class FinagleTestObjects {
 
   public static Seq<String> seq(String... entries) {
     // Raw Seq param to avoid generics conflict between scala 2.12 and 2.13
-    Builder<String, Seq> builder = Seq$.MODULE$.newBuilder();
+    Builder builder = Seq$.MODULE$.newBuilder();
     for (String entry: entries) builder.$plus$eq(entry);
-    return builder.result();
+    return (Seq<String>) builder.result();
   }
 
   static long midnightUTC(long epochMillis) {
