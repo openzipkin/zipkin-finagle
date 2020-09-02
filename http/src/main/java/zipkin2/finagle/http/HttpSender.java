@@ -71,7 +71,7 @@ final class HttpSender extends FinagleSender<HttpZipkinTracer.Config, Request, R
 
   @Override protected Request makeRequest(List<byte[]> spans) throws IOException {
     byte[] json = BytesMessageEncoder.JSON.encode(spans);
-    Request request = Request.apply(POST, "/api/v2/spans");
+    Request request = Request.apply(POST, config.path());
     request.headerMap().add("Host", config.hostHeader());
     request.headerMap().add("Content-Type", "application/json");
     // Eventhough finagle compression flag exists, it only works for servers!

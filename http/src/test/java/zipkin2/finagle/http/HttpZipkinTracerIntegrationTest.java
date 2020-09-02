@@ -25,6 +25,9 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import okhttp3.tls.HandshakeCertificates;
@@ -32,6 +35,7 @@ import okhttp3.tls.HeldCertificate;
 import org.junit.Rule;
 import org.junit.Test;
 import scala.Option;
+import zipkin.http.path$;
 import zipkin2.Span;
 import zipkin2.finagle.FinagleTestObjects;
 import zipkin2.finagle.ZipkinTracer;
@@ -87,6 +91,43 @@ public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest
             "com.twitter.finagle.ConnectionFailedException",
             "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1L)
     );
+  }
+
+  @Test public void path() throws Exception {
+    http.shutdown(); // shutdown the normal zipkin rule
+
+    // create instructions to create a complete RPC span
+    List<Record> records = asList(
+        new Record(root, Time.fromMilliseconds(TODAY), new ServiceName("web"), none),
+        new Record(root, Time.fromMilliseconds(TODAY), new Rpc("get"), none),
+        new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, none),
+        new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, none)
+    );
+
+    MockWebServer server = new MockWebServer();
+    config = config.toBuilder().host("localhost:" + server.getPort()).build();
+    try {
+      List<RecordedRequest> requests = new ArrayList<>();
+      String customPath = "/custom/api/v2/spans";
+      for (Optional<String> overridePath : asList(Optional.<String>empty(),
+          Optional.of(customPath))) {
+        // recreate the tracer with the path configuration
+        closeTracer();
+        overridePath.ifPresent(s -> config = config.toBuilder().path(s).build());
+        createTracer();
+
+        // write a complete span so that it gets reported
+        records.forEach(tracer::record);
+
+        // block until the request arrived
+        requests.add(server.takeRequest());
+      }
+      // we expect the first request to be sent to the default path, and the second to the overridden path
+      assertThat(Objects.equals(requests.get(0).getPath(), path$.DEFAULT_PATH));
+      assertThat(Objects.equals(requests.get(1).getPath(), customPath));
+    } finally {
+      server.shutdown();
+    }
   }
 
   @Test public void compression() throws Exception {
