@@ -36,6 +36,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-finagle_2.12</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -46,6 +47,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-finagle_2.12</artifactId>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -71,15 +73,9 @@
       <exclusions>
         <exclusion>
           <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
+          <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -92,10 +88,14 @@
       <exclusions>
         <exclusion>
           <groupId>org.slf4j</groupId>
-          <artifactId>log4j-over-slf4j</artifactId>
+          <artifactId>*</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.apache.kafka</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.junit.jupiter</groupId>
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>

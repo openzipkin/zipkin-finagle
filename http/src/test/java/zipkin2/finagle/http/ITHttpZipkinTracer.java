@@ -39,7 +39,7 @@ import zipkin.http.path$;
 import zipkin2.Span;
 import zipkin2.finagle.FinagleTestObjects;
 import zipkin2.finagle.ZipkinTracer;
-import zipkin2.finagle.ZipkinTracerIntegrationTest;
+import zipkin2.finagle.ITZipkinTracer;
 import zipkin2.finagle.http.HttpZipkinTracer.Config;
 import zipkin2.junit.ZipkinRule;
 
@@ -51,7 +51,7 @@ import static scala.collection.JavaConverters.mapAsJavaMap;
 import static zipkin2.finagle.FinagleTestObjects.TODAY;
 import static zipkin2.finagle.FinagleTestObjects.root;
 
-public class HttpZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest {
+public class ITHttpZipkinTracer extends ITZipkinTracer {
   @Rule public ZipkinRule http = new ZipkinRule();
   String host = "localhost:" + URI.create(http.httpUrl()).getPort();
   Config config = Config.builder().initialSampleRate(1.0f).host(host).build();

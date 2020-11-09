@@ -29,7 +29,7 @@ import zipkin2.Span;
 import zipkin2.codec.SpanBytesEncoder;
 import zipkin2.collector.scribe.ScribeCollector;
 import zipkin2.finagle.ZipkinTracer;
-import zipkin2.finagle.ZipkinTracerIntegrationTest;
+import zipkin2.finagle.ITZipkinTracer;
 import zipkin2.finagle.scribe.ScribeZipkinTracer.Config;
 import zipkin2.storage.InMemoryStorage;
 
@@ -40,7 +40,7 @@ import static zipkin2.finagle.FinagleTestObjects.TODAY;
 import static zipkin2.finagle.FinagleTestObjects.root;
 import static zipkin2.finagle.FinagleTestObjects.seq;
 
-public class ScribeZipkinTracerIntegrationTest extends ZipkinTracerIntegrationTest {
+public class ITScribeZipkinTracer extends ITZipkinTracer {
   final Option<Duration> none = Option.empty(); // avoid having to force generics
 
   InMemoryStorage storage = InMemoryStorage.newBuilder().build();
