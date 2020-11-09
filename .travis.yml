@@ -56,7 +56,7 @@ jobs:
           mvn_deploy="./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests"
           ${mvn_deploy} deploy || travis_terminate 1
           find . -type f -name pom.xml -exec sed -i 's/_2.12/_2.13/g' {} \; || travis_terminate 1
-          ${mvn_deploy} deploy
+          ${mvn_deploy} clean deploy
     # Create a release version when a release trigger and credentials needed for git are available
     - stage: create release
       if: |
