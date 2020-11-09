@@ -1,59 +1,123 @@
 # Run `travis lint` when changing this file to avoid breaking the build.
-# Default JDK is really old: 1.8.0_31; Trusty's is less old: 1.8.0_51
-# https://docs.travis-ci.com/user/ci-environment/#Virtualization-environments
-sudo: required
-dist: trusty
+
+# See https://docs.travis-ci.com/user/reference/overview/#for-a-particular-travisyml-configuration
+arch: arm64-graviton2 # in AWS over Graviton2 CPU
+virt: lxd             # LXD containers where possible as they boot much faster than full VMs
+os: linux             # required for arch different than amd64
+dist: focal           # newest available distribution
+
+# license-maven-plugin needs the full history to generate copyright year range. Ex. 2013-2020
+# Don't do a shallow clone, as it interferes with this.
+git:
+  depth: false
+
+# Re-use JDK 11 from focal release instead of delaying build with installation
+language: java
 
 cache:
   directories:
-  - $HOME/.m2
+    - $HOME/.m2
 
-language: java
+# use a go-offline that properly works with multi-module builds
+install: ./mvnw --batch-mode de.qaware.maven:go-offline-maven-plugin:resolve-dependencies
 
-jdk:
-  - openjdk14
+# Add deployment jobs. Note: "branch = master" for PRs, this is the base branch name.
+#
+# See https://docs.travis-ci.com/user/conditional-builds-stages-jobs#conditional-stages
+#     https://github.com/travis-ci/travis-conditions/
+jobs:
+  include:
+    - stage: test
+      # We run tests on non-tagged pushes to master that aren't commit made by the release plugin
+      # We also run tests on pull requests targeted at the master branch.
+      if: |
+          branch = master AND tag IS blank AND \
+          commit_message !~ /maven-release-plugin/ AND \
+          type IN (push, pull_request)
+      name: "Run unit and integration tests"
+      script: ./mvnw verify -nsu || travis_terminate 1
+    - stage: deploy
+      # If we are on master, deploy a SNAPSHOT (unless this is a commit made by the release plugin)
+      # If we are on a version tag, deploy it to Sonatype (automatically releases to Maven Central)
+      if: |
+          ( ( branch = master AND tag IS blank AND commit_message !~ /maven-release-plugin/ ) OR
+              tag =~ ^[0-9]+\.[0-9]+\.[0-9]+ ) AND \
+          type = push AND env(SONATYPE_USER) IS present
+      name: "Deploy a SNAPSHOT or release to Sonatype"
+      script:
+        # Setup GPG to sign the artifacts uploaded to Sonatype
+        - |
+          # ensure GPG commands work non-interactively
+          export GPG_TTY=$(tty)
+          # import signing key used for jar files
+          echo ${GPG_SIGNING_KEY} | base64 --decode | gpg --batch --passphrase ${GPG_PASSPHRASE} --import || travis_terminate 1
+        # Perform the deployment: travis_wait ensures upload delays don't kill the deployment
+        - |
+          mvn_deploy="./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests"
+          ${mvn_deploy} deploy || travis_terminate 1
+          find . -type f -name pom.xml -exec sed -i 's/_2.12/_2.13/g' {} \; || travis_terminate 1
+          ${mvn_deploy} deploy
+    # Create a release version when a release trigger and credentials needed for git are available
+    - stage: create release
+      if: |
+          tag =~ ^release-[0-9]+\.[0-9]+\.[0-9]+ AND \
+          type = push AND env(GH_TOKEN) IS present
+      name: "Create release version"
+      script:
+        # Configure git as release implies pushing commits and tags
+        - |
+          # Allocate commits to CI, not the owner of the deploy key
+          git config user.name "zipkinci"
+          git config user.email "zipkinci+zipkin-dev@googlegroups.com"
 
-
-before_install:
-  # Parameters used during release
-  # allocate commits to CI, not the owner of the deploy key
-  - git config user.name "zipkinci"
-  - git config user.email "zipkinci+zipkin-dev@googlegroups.com"
-  # setup https authentication credentials, used by ./mvnw release:prepare
-  - git config credential.helper "store --file=.git/credentials"
-  - echo "https://$GH_TOKEN:@github.com" > .git/credentials
-
-install:
-  # Override default travis to use the maven wrapper
-  - ./mvnw install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -Dlicense.skip=true
-
-script:
-  - ./travis/publish.sh
-
-# Don't build release tags. This avoids publish conflicts because the version commit exists both on master and the release tag.
-# See https://github.com/travis-ci/travis-ci/issues/1532
-branches:
-  except:
-    - /^[0-9]/
+          # Setup https authentication credentials, used by ./mvnw release:prepare
+          git config credential.helper "store --file=.git/credentials"
+          echo "https://$GH_TOKEN:@github.com" > .git/credentials || travis_terminate 1
+        # Checkout master, as we release from master, not a tag ref
+        - git checkout -B master || travis_terminate 1
+        # Ensure no one pushed commits since this release tag as it would fail later commands
+        - |
+          git fetch origin master:origin/master || travis_terminate 1
+          commit_local_master=$(git show --pretty='format:%H' master) || travis_terminate 1
+          commit_remote_master=$(git show --pretty='format:%H' origin/master) || travis_terminate 1
+          if [ "$commit_local_master" != "$commit_remote_master" ]; then
+            echo "Master on remote 'origin' has commits since the version under release, aborting"
+            travis_terminate 1
+          fi
+        # Get the release version from the trigger tag, then delete it.
+        - |
+          release_version=$(echo "${TRAVIS_TAG}" | sed 's/^release-//') || travis_terminate 1
+          git push origin :"${TRAVIS_TAG}"
+        # Prepare and push release commits and the version tag (N.N.N), which triggers deployment.
+        - ./mvnw --batch-mode -nsu -DreleaseVersion=${release_version} -Darguments=-DskipTests release:prepare
 
 notifications:
   webhooks:
     urls:
       - https://webhooks.gitter.im/e/ead3c37d57527214e9f2
-      - https://webhooks.gitter.im/e/e57478303f87ecd7bffc
+      - https://webhooks.gitter.im/e/9f1ee2f315d32956f8d6
     on_success: change
     on_failure: always
 
-env:
-  global:
-  # Ex. travis encrypt BINTRAY_USER=your_github_account
-  - secure: "CjMV1KSpvO4YFqc//ayF4KcHYFInpakIVEET4NTC7GbIYAqf2jCH9rzSC6PQut88Ucb10hMXYudZ7egzFAUoyiZDK9V9o8IP9XZaXSRSUJjN3jRwjU8b54i0YsPGazakES2Jq0euBbJQ1Ad4p2HbRBTwQHdSr9FGWoQblGr+tE9Lbor6QLRJudCvjhETUS8qPfnDl4BOoK8De1y1Zl25HwYKw01VNe/QHR8vgjmxKJh3wnMIwfZcTuTDlWCbviJzUP4HQUAibTNKTMkDDVMWvdwrl52QgIQ6pSgzLKcU92QyowB7ksRZqKDIfT0qUMe+RyqqQEyO+mPGivDqjqSvjNLZoS+Q7sBow3bb5fO8jTM1ncTLbgiDSDJtrPPdRxkebNQpZLlyarPGlDfAzh01g1rhsk5RxuQqBtdgiDkzdBNN3kIaFn0ubh+oy8RAzFHTzO1HNjaVxvmMoqOLQk302agFh0keSPQy6EMfWyON+RhIy5oi6rIXKwcJIbLheZAOUtmYL/Luy7upkgP3asISdaUuVQw8m+/hw4jfNwrj8e47B6K53paAzhfV1AbsMG71fLbupWbrmRng6K7UVpQGNsJtRD2jdfxNFgAAAzkwcCZ0f3oTISJZhtPkTMA6SzMIfpj5KdjV+Sq7mnLMhQmuTWWwHoxR6Xjkf32LKVMYq90="
-  # Ex. travis encrypt BINTRAY_KEY=xxx-https://bintray.com/profile/edit-xxx --add
-  - secure: "lH5VBJqy3HapYCZIyGt45TvSg/sqNTi0am+Au8Cr/VLVe7dHA1rXxLs3ujfTTGI/xRrKRIt8Nney9blvrlFnOGtvZgXWP5/vkP+sOk+beL21FizV2SuSuHSHHuKnUoVCDRoI3TxR5b4aCEMH3a8xKGEHePd+lpgf/VK0Y/LgCPyxn04nc976nEER1ZZdDiwT5EUGaWtQFRoYsO2nNmxqxnE41E8AZLGCJXEM+8jypAoVUAdSPX/HcLlooOepW5TftAVfFAXWaBcy8BUbfMeZVtKxGkqclFjionp2IaUsT++o06hqQCk8/tLcgYD2PIqjNziuPxVr62X91cVZaPetUG1w+RMmtAC6Bw2S3IZF1GQOOCLRn5bz/iEWlFui7Q7N+bvZFCPFoidz0QlCe4EqgiGTTMeYZPlD7HBVL62mO+ocpSrysNy+GBjjF2ZT78tgd1djHhgsv5VzGHCQKk5FSJ6It55qlLYuyAF9ZEmA9BRdHCrMrP4Zm1EGQsK02sEMvecGHjD/NalaCRJyKlzhzKcJrNRUcK5lyKalVl8+v/GvrINkNMmgyz0kxY2ZPmN/a6gUxqH88C5eapUWME3+uKef4mlksZtnbXXdgyDRmgdC4lZ6NuK3hme3nmmZ3l1I5uQRI09/l7DOL+wTGbS5IA3CiCHZ5wHetHAVCugtngQ="
-  # Ex. travis encrypt GH_TOKEN=XXX-https://github.com/settings/tokens-XXX --add
-  - secure: "XwrM4IMtRqYbiXj7Bp2oly+DLU1s+76kWQjVnZBrB4UKGd6NJZpUhMMF9V3akWBg7w8CmF3ZEP/eFthuUiqtpDNrMei3GMz578/gWZNBtRVk8MJ+4EqVAabvFrs9OS6YMGKVDFVcELN2CyiPnjBWrRMgtOlKUp28jgXLmu7AckF7r4xPU1xgKYlSJiWdo4X3xhQ/UwDEgVXUTWiCX4Cwr1rho/VoON+rtlW/KkTVGjMHG9UNAQvMCIHOug5LxI/2v1rVGMuZJlmzBoHqsr9RUq8OaTJ9r+xvSbX/cAOtYw731eYlkYOCCYa5JiUYRHXUsY1IwBOPk228/0VoSbnLFwW5a7VKFLrnKcOJ6UOymXDG4jeTXEWR/ByY2GIzbT8/k+Crmi3jlZBrpDq03ZYGohwFO+dyw5NrIKevSr8kc+nCHWkJFsrpDlhMAO2ZELAhcvAY/NNrAwLO+EjsDmgIKetY8qFIoZTAFQAMvIj0j2k6IDqWKMuNJSq1KogjRcAkvXwV5d5lLcn1HZqYt8yY35i0KJ9KmtKpi53qvlpnAeWITArREhIkYl8YNux6mYGJ/nNnGLQwFZb+BdotIKW7dro9cABpeLsd1RlvG5ru21RG7//I0M8YTlk6joq+o/QNZBFzHTVQjPMmMMzCB8nhqL79PxaR8ZC1HYNgwGta87M="
-  # Ex. travis encrypt SONATYPE_USER=your_sonatype_account
-  - secure: "r/PfsDfAiMDWpxMNYSmYa8V04zou5fAcnfvgZEcm8e23icjPpOubpQtRBsItwJAbdzHQEr9YXD7DcklPtWALRktaH6lJcy6W1/uxEVNYTqnx8s8vYNNAYPz88Xp/cKXTBoj5c/K5FwBMp2RtHzjn5kh9e1Gw2Rdz8MUMH68iBsyePntsysuXDyOg4wEpEtiCxIqUaoEGGZaCG3MZeQYmyyp3eRkqkdMHMxS5nBDq3oG8rLa+iu634do89tjDXjkW8sQbFDZifKuBsdgIdBxAtbOY4vsH1bCOlxyjYG7+EDkCZqWCcV2pXfdTovD+i//TMZycWk8hp76Cn9vMxW5Vh2Ggb1lAfGzVGDdIeide5k/gB2i3rqV/izqMfIlLKRGkuUyNJSFh6YtCNZDQ9nC1pK2l0A0QVpgN2k/rpBQsLjj0awkH5BZwRwM4mWkwJbr+klVG2L4N8MHcR0j+ROoRVl1g/dfpuEkr2/JeplPTE6cDxa2a/yv6XWdZslLA0AueX6jBVZM1dxZwxgQEeqvQODQ8+C7BtJCfaa3R2bnbqQ6smZM+WrQjJ0Bf+/fWsM2YTL5fUbvMKn8NQOv2mMqR3nCzW26uqzBoJgoHyfcwgaCtOsgelOBzKUOhtda2ifHuoDnn4P36umq+dHe/T3I+AFkIGVb+tK3j4nUcMJW+YVk="
-  # Ex. travis encrypt SONATYPE_PASSWORD=your_sonatype_password
-  - secure: "B9iXeqXlL5AIMQ9jATVaK6J6Uy1oSOR9Jl42dZsEiK6pc6ZHGpf0zAoStApUPp5/GjtSXzPObnYEu+R7FVOHlOhcPwFdY71SyD4haSCnOFTIBPJbkCunIAA94u6jO1E/AORiETCF31zsl8d7neXUFougCzpvpVvC9PrSZceiHlCfI1+ggVWJKrJ2/C9dzfuM4pdk2jUB/29uq8OWYkWbPfW9PFbBHT91Pt/I1gKKb9jBzbD6ROeha/2CdFsBlk2gLqMoWdrDcD/nwy0GiuRzR2LFCjmclxf/euSkLcGYDRzWnzam7t4U9a2ShCFnp/EuxT4hxF2vEkBs+GS4PzFkQK8Ow4aqrkHiNMYWRluYSxBQ8VcPZnbJalepqYHSmRakE8OPakELIojCRT2rg2nK4Xgk1m1u4qFir0atjuP878Z7JQotN82P5OvuDkWb5D3APDDHq1St+9eVXPrtQe4TZr2cp1YJ9HmuOpyzmblYWKjn61Rjd4+0EamIXylxgo6yMeIqqUJkLOAJpE1g8YT8t6uENpCgfKkNx4okSIz7cL1jlYrHX3Ac6K15UZjbkAtk0ol+HnuoKdcPSQaA9JkEf10+/1FKLPLW31R+N412NaGVxut+sY0/jnTYOClfxQxUQqceXiIF3fLYtrbTY64uIDegVDzEQANugQkrmq3WgDU="
-
+# Secure variables needed for release and publication
+#
+# When Travis, add to https://travis-ci.org/github/openzipkin/${REPO}/settings
+#
+# GH_TOKEN=XXX-https://github.com/settings/tokens-XXX
+#   - makes release commits and tags, also writes to GHCR if Docker
+#   - needs repo:status, public_repo and if Docker write:packages, delete:packages
+#   - referenced in .settings.xml
+#   - store like this: echo "https://$GH_TOKEN:@github.com" > .git/credentials
+# GPG_SIGNING_KEY=$(gpg -a --export-secret-keys zipkin-admin@googlegroups.com |base64)
+#   - used to sign jars in release commands
+#   - sent to keyserver.ubuntu.com
+#   - import like this: echo ${GPG_SIGNING_KEY} | base64 --decode | gpg --batch --passphrase ${GPG_PASSPHRASE} --import
+# GPG_PASSPHRASE=passphrase_for_GPG_SIGNING_KEY
+#   - referenced in .settings.xml
+# SONATYPE_USER=your_sonatype_account_token
+#   - used to publish to Maven Central via https://oss.sonatype.org/#stagingRepositories
+#   - needs access to io.zipkin via https://issues.sonatype.org/browse/OSSRH-16669
+#   - generate via https://oss.sonatype.org/#profile;User%20Token
+#   - referenced in .settings.xml
+# SONATYPE_PASSWORD=password_to_SONATYPE_USER
+#   - referenced in .settings.xml

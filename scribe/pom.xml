@@ -34,6 +34,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-finagle_2.12</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -50,6 +51,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-finagle_2.12</artifactId>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
