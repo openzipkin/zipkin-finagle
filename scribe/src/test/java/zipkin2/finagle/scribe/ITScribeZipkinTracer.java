@@ -28,13 +28,15 @@ import scala.Option;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesEncoder;
 import zipkin2.collector.scribe.ScribeCollector;
-import zipkin2.finagle.ZipkinTracer;
 import zipkin2.finagle.ITZipkinTracer;
+import zipkin2.finagle.ZipkinTracer;
 import zipkin2.finagle.scribe.ScribeZipkinTracer.Config;
 import zipkin2.storage.InMemoryStorage;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.awaitility.Awaitility.await;
 import static scala.collection.JavaConverters.mapAsJavaMap;
 import static zipkin2.finagle.FinagleTestObjects.TODAY;
 import static zipkin2.finagle.FinagleTestObjects.root;
@@ -79,9 +81,8 @@ public class ITScribeZipkinTracer extends ITZipkinTracer {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, none));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, none));
 
-    Thread.sleep(1500); // wait for scribe request attempt to go through
-
-    assertThat(mapAsJavaMap(stats.counters()))
+    // wait for the Scribe request attempt to go through
+    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(mapAsJavaMap(stats.counters()))
         .contains(
             entry(seq("spans"), 1L),
             entry(seq("span_bytes"), 165L),
@@ -102,6 +103,6 @@ public class ITScribeZipkinTracer extends ITZipkinTracer {
                     "com.twitter.finagle.Failure",
                     "com.twitter.finagle.ConnectionFailedException",
                     "io.netty.channel.AbstractChannel$AnnotatedConnectException"),
-                1L));
+                1L)));
   }
 }

@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import okhttp3.tls.HandshakeCertificates;
@@ -38,14 +37,16 @@ import scala.Option;
 import zipkin.http.path$;
 import zipkin2.Span;
 import zipkin2.finagle.FinagleTestObjects;
-import zipkin2.finagle.ZipkinTracer;
 import zipkin2.finagle.ITZipkinTracer;
+import zipkin2.finagle.ZipkinTracer;
 import zipkin2.finagle.http.HttpZipkinTracer.Config;
 import zipkin2.junit.ZipkinRule;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertNotNull;
 import static scala.collection.JavaConverters.mapAsJavaMap;
 import static zipkin2.finagle.FinagleTestObjects.TODAY;
@@ -75,22 +76,22 @@ public class ITHttpZipkinTracer extends ITZipkinTracer {
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY), ClientSend$.MODULE$, none));
     tracer.record(new Record(root, Time.fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, none));
 
-    Thread.sleep(1500); // wait for http request attempt to go through
-
-    assertThat(mapAsJavaMap(stats.counters())).contains(
-        entry(FinagleTestObjects.seq("spans"), 1L),
-        entry(FinagleTestObjects.seq("span_bytes"), 185L),
-        entry(FinagleTestObjects.seq("spans_dropped"), 1L),
-        entry(FinagleTestObjects.seq("messages"), 1L),
-        entry(FinagleTestObjects.seq("message_bytes"), 187L),
-        entry(FinagleTestObjects.seq("messages_dropped"), 1L),
-        entry(FinagleTestObjects.seq("messages_dropped", "com.twitter.finagle.Failure"), 1L),
-        entry(FinagleTestObjects.seq("messages_dropped", "com.twitter.finagle.Failure",
-            "com.twitter.finagle.ConnectionFailedException"), 1L),
-        entry(FinagleTestObjects.seq("messages_dropped", "com.twitter.finagle.Failure",
-            "com.twitter.finagle.ConnectionFailedException",
-            "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1L)
-    );
+    // wait for the HTTP request attempt to go through
+    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(mapAsJavaMap(stats.counters()))
+        .contains(
+            entry(FinagleTestObjects.seq("spans"), 1L),
+            entry(FinagleTestObjects.seq("span_bytes"), 185L),
+            entry(FinagleTestObjects.seq("spans_dropped"), 1L),
+            entry(FinagleTestObjects.seq("messages"), 1L),
+            entry(FinagleTestObjects.seq("message_bytes"), 187L),
+            entry(FinagleTestObjects.seq("messages_dropped"), 1L),
+            entry(FinagleTestObjects.seq("messages_dropped", "com.twitter.finagle.Failure"), 1L),
+            entry(FinagleTestObjects.seq("messages_dropped", "com.twitter.finagle.Failure",
+                "com.twitter.finagle.ConnectionFailedException"), 1L),
+            entry(FinagleTestObjects.seq("messages_dropped", "com.twitter.finagle.Failure",
+                "com.twitter.finagle.ConnectionFailedException",
+                "io.netty.channel.AbstractChannel$AnnotatedConnectException"), 1L)
+        ));
   }
 
   @Test public void path() throws Exception {

@@ -35,17 +35,18 @@ import scala.Option;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesDecoder;
 import zipkin2.finagle.FinagleTestObjects;
-import zipkin2.finagle.ZipkinTracer;
 import zipkin2.finagle.ITZipkinTracer;
+import zipkin2.finagle.ZipkinTracer;
 import zipkin2.reporter.kafka.KafkaSender;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.awaitility.Awaitility.await;
 import static scala.collection.JavaConverters.mapAsJavaMap;
 
 public class ITKafkaZipkinTracer extends ITZipkinTracer {
-
   final Option<Duration> none = Option.empty(); // avoid having to force generics
   EphemeralKafkaBroker broker = EphemeralKafkaBroker.create();
   @Rule public KafkaJunitRule kafka = new KafkaJunitRule(broker).waitForStartup();
@@ -87,22 +88,30 @@ public class ITKafkaZipkinTracer extends ITZipkinTracer {
         .overrides(overrides)
         .build(), config, stats);
 
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new ServiceName("web"), none));
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), new Rpc("get"), none));
-    tracer.record(new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY), ClientSend$.MODULE$, none));
+    tracer.record(
+        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY),
+            new ServiceName("web"), none));
+    tracer.record(
+        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY),
+            new Rpc("get"), none));
+    tracer.record(
+        new Record(FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY),
+            ClientSend$.MODULE$, none));
     tracer.record(new Record(
-        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1), ClientRecv$.MODULE$, none));
+        FinagleTestObjects.root, Time.fromMilliseconds(FinagleTestObjects.TODAY + 1),
+        ClientRecv$.MODULE$, none));
 
-    Thread.sleep(1500); // wait for kafka request attempt to go through
-
-    assertThat(mapAsJavaMap(stats.counters())).containsOnly(
-        entry(FinagleTestObjects.seq("spans"), 1L),
-        entry(FinagleTestObjects.seq("span_bytes"), 185L),
-        entry(FinagleTestObjects.seq("spans_dropped"), 1L),
-        entry(FinagleTestObjects.seq("messages"), 1L),
-        entry(FinagleTestObjects.seq("message_bytes"), 187L),
-        entry(FinagleTestObjects.seq("messages_dropped"), 1L),
-        entry(FinagleTestObjects.seq("messages_dropped", "org.apache.kafka.common.errors.TimeoutException"), 1L)
-    );
+    // wait for the HTTP request attempt to go through
+    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(mapAsJavaMap(stats.counters()))
+        .containsOnly(
+            entry(FinagleTestObjects.seq("spans"), 1L),
+            entry(FinagleTestObjects.seq("span_bytes"), 185L),
+            entry(FinagleTestObjects.seq("spans_dropped"), 1L),
+            entry(FinagleTestObjects.seq("messages"), 1L),
+            entry(FinagleTestObjects.seq("message_bytes"), 187L),
+            entry(FinagleTestObjects.seq("messages_dropped"), 1L),
+            entry(FinagleTestObjects.seq("messages_dropped",
+                "org.apache.kafka.common.errors.TimeoutException"), 1L)
+        ));
   }
 }
