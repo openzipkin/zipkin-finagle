@@ -1,4 +1,6 @@
-[![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin) [![Build Status](https://travis-ci.org/openzipkin/zipkin-finagle.svg?branch=master)](https://travis-ci.org/openzipkin/zipkin-finagle) [![Download](https://api.bintray.com/packages/openzipkin/maven/zipkin-finagle/images/download.svg) ](https://bintray.com/openzipkin/maven/zipkin-finagle/_latestVersion)
+[![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin)
+[![Build Status](https://travis-ci.com/openzipkin/zipkin-finagle.svg?branch=master)](https://travis-ci.com/openzipkin/zipkin-finagle)
+[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.finagle2/zipkin-finagle_2.12.svg)](https://search.maven.org/search?q=g:io.brave.cassandra%20AND%20a:zipkin-finagle_2.12)
 
 # zipkin-finagle
 Integration between Finagle tracing to Zipkin transports including http, kafka and scribe.

@@ -1,7 +1,7 @@
 # Run `travis lint` when changing this file to avoid breaking the build.
 
 # See https://docs.travis-ci.com/user/reference/overview/#for-a-particular-travisyml-configuration
-arch: arm64 # Can't use arm64-graviton2 as it cycles on boot as of 2020-11-02
+arch: amd64 # Tests currently flake when using arm64
 virt: lxd   # LXD containers where possible as they boot much faster than full VMs
 os: linux   # required for arch different than amd64
 dist: focal # newest available distribution
@@ -101,7 +101,7 @@ notifications:
 
 # Secure variables needed for release and publication
 #
-# When Travis, add to https://travis-ci.org/github/openzipkin/${REPO}/settings
+# When Travis, add to https://travis-ci.com/github/openzipkin/${REPO}/settings
 #
 # GH_TOKEN=XXX-https://github.com/settings/tokens-XXX
 #   - makes release commits and tags, also writes to GHCR if Docker
