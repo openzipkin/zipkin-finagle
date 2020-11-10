@@ -1,7 +1,7 @@
 # Run `travis lint` when changing this file to avoid breaking the build.
 
 # See https://docs.travis-ci.com/user/reference/overview/#for-a-particular-travisyml-configuration
-arch: amd64 # Tests currently flake when using arm64
+arch: arm64 # Not arm64-graviton2 as it cycles on boot for a long time before running [2020-11-02]
 virt: lxd   # LXD containers where possible as they boot much faster than full VMs
 os: linux   # required for arch different than amd64
 dist: focal # newest available distribution

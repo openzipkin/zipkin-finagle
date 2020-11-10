@@ -22,11 +22,10 @@ import com.twitter.finagle.tracing.Annotation.ServerSend$;
 import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import java.util.List;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import zipkin2.DependencyLink;
 import zipkin2.Endpoint;
 import zipkin2.Span;
@@ -35,8 +34,10 @@ import zipkin2.internal.DependencyLinker;
 
 import static com.twitter.util.Time.fromMilliseconds;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.awaitility.Awaitility.await;
 import static scala.Option.empty;
 import static scala.collection.JavaConverters.mapAsJavaMap;
 import static zipkin2.finagle.FinagleTestObjects.TODAY;
@@ -44,7 +45,6 @@ import static zipkin2.finagle.FinagleTestObjects.child;
 import static zipkin2.finagle.FinagleTestObjects.root;
 
 public abstract class ITZipkinTracer {
-  @Rule public ExpectedException thrown = ExpectedException.none();
   protected InMemoryStatsReceiver stats = new InMemoryStatsReceiver();
   protected ZipkinTracer tracer;
 
@@ -70,7 +70,7 @@ public abstract class ITZipkinTracer {
     return encoder().encoding().listSizeInBytes(encodedSpans);
   }
 
-  @Test public void multipleSpansGoIntoSameMessage() throws Exception {
+  @Test public void multipleSpansGoIntoSameMessage() {
     tracer.record(new Record(root, fromMilliseconds(TODAY), new ServiceName("web"), empty()));
     tracer.record(new Record(root, fromMilliseconds(TODAY), new Rpc("get"), empty()));
     tracer.record(new Record(root, fromMilliseconds(TODAY), ServerRecv$.MODULE$, empty()));
@@ -80,8 +80,6 @@ public abstract class ITZipkinTracer {
     tracer.record(new Record(child, fromMilliseconds(TODAY), new Rpc("get"), empty()));
     tracer.record(new Record(child, fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
     tracer.record(new Record(child, fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
-
-    Thread.sleep(2000); // the AsyncReporter thread has a default interval of 1s
 
     Endpoint web = Endpoint.newBuilder().serviceName("web").ip("127.0.0.1").build();
     Span server = Span.newBuilder()
@@ -99,22 +97,25 @@ public abstract class ITZipkinTracer {
         .parentId(child.parentId().toLong())
         .id(child.spanId().toLong()).build();
 
-    assertThat(getTraces()).containsExactly(asList(server, client));
-
     long expectedSpanBytes = encoder().sizeInBytes(server) + encoder().sizeInBytes(client);
     long expectedMessageSize =
         messageSizeInBytes(asList(encoder().encode(server), encoder().encode(client)));
 
-    assertThat(mapAsJavaMap(stats.counters())).containsExactly(
-        entry(FinagleTestObjects.seq("span_bytes"), expectedSpanBytes),
-        entry(FinagleTestObjects.seq("spans"), 2L),
-        entry(FinagleTestObjects.seq("spans_dropped"), 0L),
-        entry(FinagleTestObjects.seq("message_bytes"), expectedMessageSize),
-        entry(FinagleTestObjects.seq("messages"), 1L)
-    );
+    // the AsyncReporter thread has a default interval of 1s, but reporting delay can take longer
+    await().atMost(5, SECONDS).untilAsserted(() -> {
+      assertThat(getTraces()).containsExactly(asList(server, client));
+
+      assertThat(mapAsJavaMap(stats.counters())).containsExactly(
+          entry(FinagleTestObjects.seq("span_bytes"), expectedSpanBytes),
+          entry(FinagleTestObjects.seq("spans"), 2L),
+          entry(FinagleTestObjects.seq("spans_dropped"), 0L),
+          entry(FinagleTestObjects.seq("message_bytes"), expectedMessageSize),
+          entry(FinagleTestObjects.seq("messages"), 1L)
+      );
+    });
   }
 
-  @Test public void configOverridesLocalServiceName_client() throws Exception {
+  @Test public void configOverridesLocalServiceName_client() {
     tracer.close();
     tracer = newTracer("web");
 
@@ -129,10 +130,14 @@ public abstract class ITZipkinTracer {
     tracer.record(new Record(child, fromMilliseconds(TODAY), ClientSend$.MODULE$, empty()));
     tracer.record(new Record(child, fromMilliseconds(TODAY + 1), ClientRecv$.MODULE$, empty()));
 
-    Thread.sleep(2000); // the AsyncReporter thread has a default interval of 1s
-
-    assertThat(new DependencyLinker().putTrace(getTraces().get(0)).link()).containsExactly(
-        DependencyLink.newBuilder().parent("web").child("app").callCount(1).build()
+    // the AsyncReporter thread has a default interval of 1s, but reporting delay can take longer
+    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(getTraces())
+        .isNotEmpty().first()
+        .extracting(t -> new DependencyLinker().putTrace(t).link())
+        .asInstanceOf(InstanceOfAssertFactories.list(DependencyLink.class))
+        .containsExactly(
+            DependencyLink.newBuilder().parent("web").child("app").callCount(1).build()
+        )
     );
   }
 }
