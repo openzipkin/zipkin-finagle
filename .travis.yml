@@ -1,10 +1,10 @@
 # Run `travis lint` when changing this file to avoid breaking the build.
 
 # See https://docs.travis-ci.com/user/reference/overview/#for-a-particular-travisyml-configuration
-arch: amd64           # Use default architecture
-virt: lxd             # LXD containers where possible as they boot much faster than full VMs
-os: linux             # required for arch different than amd64
-dist: focal           # newest available distribution
+arch: arm64 # Can't use arm64-graviton2 as it cycles on boot as of 2020-11-02
+virt: lxd   # LXD containers where possible as they boot much faster than full VMs
+os: linux   # required for arch different than amd64
+dist: focal # newest available distribution
 
 # license-maven-plugin needs the full history to generate copyright year range. Ex. 2013-2020
 # Don't do a shallow clone, as it interferes with this.
