@@ -56,11 +56,16 @@
     <zipkin-reporter.version>2.16.0</zipkin-reporter.version>
     <okhttp.version>4.9.0</okhttp.version>
 
+    <animal-sniffer-maven-plugin.version>1.19</animal-sniffer-maven-plugin.version>
+    <go-offline-maven-plugin.version>1.2.7</go-offline-maven-plugin.version>
     <!-- TODO: cleanup any redundant ignores now also in the 4.0 release (once final) -->
     <license-maven-plugin.version>4.0.rc2</license-maven-plugin.version>
-    <maven-failsafe-plugin.version>3.0.0-M5</maven-failsafe-plugin.version>
-    <maven-javadoc-plugin.version>3.2.0</maven-javadoc-plugin.version>
-    <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+    <!-- Use same version as https://github.com/openzipkin/docker-java -->
+    <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
+    <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
+    <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
+    <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
     <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
   </properties>
 
@@ -219,7 +224,49 @@
         <plugin>
           <groupId>de.qaware.maven</groupId>
           <artifactId>go-offline-maven-plugin</artifactId>
-          <version>1.2.7</version>
+          <version>${go-offline-maven-plugin.version}</version>
+          <configuration>
+            <dynamicDependencies>
+              <!-- Add dependencies indirectly referenced by build plugins -->
+              <DynamicDependency>
+                <groupId>org.codehaus.mojo.signature</groupId>
+                <artifactId>${main.signature.artifact}</artifactId>
+                <version>1.0</version>
+                <type>signature</type>
+                <repositoryType>MAIN</repositoryType>
+              </DynamicDependency>
+              <DynamicDependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_core</artifactId>
+                <version>${errorprone.version}</version>
+                <repositoryType>MAIN</repositoryType>
+              </DynamicDependency>
+              <DynamicDependency>
+                <groupId>com.google.auto.value</groupId>
+                <artifactId>auto-value</artifactId>
+                <version>${auto-value.version}</version>
+                <repositoryType>MAIN</repositoryType>
+              </DynamicDependency>
+              <DynamicDependency>
+                <groupId>org.apache.maven.surefire</groupId>
+                <artifactId>surefire-junit-platform</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <repositoryType>PLUGIN</repositoryType>
+              </DynamicDependency>
+            </dynamicDependencies>
+          </configuration>
+        </plugin>
+
+        <!-- maven-dependency-plugin:get and Retrolambda should use a recent version. -->
+        <plugin>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${maven-dependency-plugin.version}</version>
+        </plugin>
+
+        <!-- Uploads occur as a last step (which also adds checksums) -->
+        <plugin>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>3.0.0-M1</version>
         </plugin>
 
         <plugin>
@@ -227,10 +274,15 @@
           <version>3.0.0-M1</version>
         </plugin>
 
-        <!-- Uploads occur as a last step (which also adds checksums) -->
         <plugin>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${maven-jar-plugin.version}</version>
+          <configuration>
+            <archive>
+              <!-- prevents huge pom file from also being added to the jar under META-INF/maven -->
+              <addMavenDescriptor>false</addMavenDescriptor>
+            </archive>
+          </configuration>
         </plugin>
 
         <plugin>
@@ -254,104 +306,69 @@
 
     <plugins>
       <plugin>
-        <inherited>true</inherited>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
+        <version>${maven-compiler-plugin.version}</version>
+        <inherited>true</inherited>
         <configuration>
+          <!-- Retrolambda will rewrite lambdas as Java 6 bytecode -->
           <source>1.8</source>
           <target>1.8</target>
-          <forceJavacCompilerUse>true</forceJavacCompilerUse>
+          <!-- or die! com.sun.tools.javac.api.JavacTool -->
+          <fork>true</fork>
           <showWarnings>true</showWarnings>
+          <annotationProcessorPaths>
+            <!-- auto-value is placed here even though not needed for all projects as
+                 configuring along with errorprone is tricky in subprojects -->
+            <processorPath>
+              <groupId>com.google.auto.value</groupId>
+              <artifactId>auto-value</artifactId>
+              <version>${auto-value.version}</version>
+            </processorPath>
+          </annotationProcessorPaths>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.2.0</version>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.4</version>
       </plugin>
 
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${maven-failsafe-plugin.version}</version>
-        <configuration>
-          <!-- Ensure scope leak cause ends up in the console -->
-          <trimStackTrace>false</trimStackTrace>
-          <!-- Don't add org.apache.logging.log4j.jul.LogManager here as it conflicts with
-               classloading, causing brave.test.propagation.PropagationTest to flake. -->
-          <classpathDependencyExcludes>
-            <classpathDependencyExclude>org.apache.logging.log4j:log4j-jul</classpathDependencyExclude>
-          </classpathDependencyExcludes>
-        </configuration>
+        <version>${maven-surefire-plugin.version}</version>
       </plugin>
+
       <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>${maven-failsafe-plugin.version}</version>
-        <configuration>
-          <!-- Try to prevent flakes in CI -->
-          <reuseForks>false</reuseForks>
-          <!-- workaround to SUREFIRE-1831 -->
-          <useModulePath>false</useModulePath>
-          <!-- Brave and OkHttp MockWebServer log with java.util.logging. Adding the bridge allows
-               allows us to change scope and format via log4j2.properties -->
-          <systemPropertyVariables>
-            <java.util.logging.manager>org.apache.logging.log4j.jul.LogManager</java.util.logging.manager>
-          </systemPropertyVariables>
-          <!-- Ensure scope leak cause ends up in the console -->
-          <trimStackTrace>false</trimStackTrace>
-        </configuration>
+        <groupId>net.orfjackal.retrolambda</groupId>
+        <artifactId>retrolambda-maven-plugin</artifactId>
+        <version>2.5.7</version>
         <executions>
           <execution>
-            <id>integration-test</id>
-            <phase>verify</phase>
             <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
+              <goal>process-main</goal>
             </goals>
+            <configuration>
+              <target>${main.java.version}</target>
+              <fork>true</fork>
+              <quiet>true</quiet>
+            </configuration>
           </execution>
         </executions>
       </plugin>
 
+      <!-- Language-level aside, make sure Java 9 types and methods aren't used -->
       <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>${license-maven-plugin.version}</version>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>animal-sniffer-maven-plugin</artifactId>
+        <version>${animal-sniffer-maven-plugin.version}</version>
         <configuration>
-          <header>${main.basedir}/src/etc/header.txt</header>
-          <mapping>
-            <!-- Don't use javadoc style as this makes code formatters break it by adding tags! -->
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
-          <excludes>
-            <exclude>.travis.yml</exclude>
-            <exclude>.gitignore</exclude>
-            <exclude>.mvn/**</exclude>
-            <exclude>mvnw*</exclude>
-            <exclude>etc/header.txt</exclude>
-            <exclude>**/log4j2.properties</exclude>
-            <exclude>**/.idea/**</exclude>
-            <exclude>LICENSE</exclude>
-            <exclude>**/*.md</exclude>
-          </excludes>
-          <strictCheck>true</strictCheck>
+          <checkTestClasses>false</checkTestClasses>
+          <signature>
+            <groupId>org.codehaus.mojo.signature</groupId>
+            <artifactId>${main.signature.artifact}</artifactId>
+            <version>1.0</version>
+          </signature>
         </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>com.mycila</groupId>
-            <artifactId>license-maven-plugin-git</artifactId>
-            <version>${license-maven-plugin.version}</version>
-          </dependency>
-        </dependencies>
         <executions>
           <execution>
             <goals>
               <goal>check</goal>
             </goals>
-            <phase>compile</phase>
           </execution>
         </executions>
       </plugin>
@@ -367,9 +384,8 @@
             </goals>
             <configuration>
               <rules>
-                <!-- Can't use JDK 15 due to:
-                     com.datastax.driver.core.exceptions.ServerError: An unexpected error occurred server side on /127.0.0.1:49702: java.lang.UnsupportedOperationException: can't get field offset on a hidden class: private final org.apache.cassandra.db.ClusteringComparator org.apache.cassandra.db.ClusteringComparator$$Lambda$157/0x0000000800de0040.arg$1
-                     -->
+                <!-- Cannot use JDK 15 until Retrolambda supports it
+                     https://github.com/luontola/retrolambda/issues/161 -->
                 <requireJavaVersion>
                   <version>[11,15)</version>
                 </requireJavaVersion>
@@ -378,15 +394,129 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <version>3.2.1</version>
+        <configuration>
+          <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+          <settingsFile>${main.basedir}/src/it/settings.xml</settingsFile>
+          <profiles>
+            <profile>!release</profile>
+          </profiles>
+          <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+          <postBuildHookScript>verify</postBuildHookScript>
+          <addTestClassPath>true</addTestClassPath>
+          <skipInvocation>${skipTests}</skipInvocation>
+          <streamLogs>true</streamLogs>
+          <mavenOpts>-Dorg.slf4j.simpleLogger.defaultLogLevel=WARN</mavenOpts>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>install</goal>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
+
+    <resources>
+      <!-- This adds the LICENSE and NOTICE file to the jar and -sources jar of each module -->
+      <resource>
+        <filtering>false</filtering>
+        <directory>${main.basedir}</directory>
+        <targetPath>META-INF/</targetPath>
+        <includes>
+          <include>LICENSE</include>
+          <include>NOTICE</include>
+        </includes>
+      </resource>
+    </resources>
   </build>
 
   <profiles>
+    <!-- -DskipTests ensures license libraries aren't required when packaging -->
     <profile>
-      <id>error-prone-11+</id>
+      <id>check-license</id>
       <activation>
-        <jdk>[11,)</jdk>
-        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>!skipTests</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <version>${license-maven-plugin.version}</version>
+            <configuration>
+              <header>${main.basedir}/src/etc/header.txt</header>
+              <mapping>
+                <!-- Don't use javadoc style as this makes code formatters break it by adding tags! -->
+                <java>SLASHSTAR_STYLE</java>
+                <!-- build-bin/docker -->
+                <block_on_health>SCRIPT_STYLE</block_on_health>
+                <configure_docker>SCRIPT_STYLE</configure_docker>
+                <configure_docker_push>SCRIPT_STYLE</configure_docker_push>
+                <docker_arch>SCRIPT_STYLE</docker_arch>
+                <docker_args>SCRIPT_STYLE</docker_args>
+                <docker_build>SCRIPT_STYLE</docker_build>
+                <docker_push>SCRIPT_STYLE</docker_push>
+                <!-- build-bin/git -->
+                <login_git>SCRIPT_STYLE</login_git>
+                <version_from_trigger_tag>SCRIPT_STYLE</version_from_trigger_tag>
+                <!-- build-bin/gpg -->
+                <configure_gpg>SCRIPT_STYLE</configure_gpg>
+                <!-- build-bin/maven -->
+                <maven_build_or_unjar>SCRIPT_STYLE</maven_build_or_unjar>
+                <maven_deploy>SCRIPT_STYLE</maven_deploy>
+                <maven_go_offline>SCRIPT_STYLE</maven_go_offline>
+                <maven_release>SCRIPT_STYLE</maven_release>
+                <maven_unjar>SCRIPT_STYLE</maven_unjar>
+              </mapping>
+              <excludes>
+                <exclude>.docker.env</exclude>
+                <exclude>.gitignore</exclude>
+                <exclude>.editorconfig</exclude>
+                <exclude>.mvn/**</exclude>
+                <exclude>mvnw*</exclude>
+                <exclude>etc/header.txt</exclude>
+                <exclude>**/.idea/**</exclude>
+                <exclude>LICENSE</exclude>
+                <exclude>**/*.md</exclude>
+                <exclude>**/bnd.bnd</exclude>
+                <exclude>src/test/resources/**</exclude>
+                <exclude>src/main/resources/**</exclude>
+                <exclude>build-bin/*</exclude>
+              </excludes>
+              <strictCheck>true</strictCheck>
+            </configuration>
+            <dependencies>
+              <dependency>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin-git</artifactId>
+                <version>${license-maven-plugin.version}</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>compile</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>error-prone</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
       </activation>
       <build>
         <plugins>
@@ -466,10 +596,31 @@
             </executions>
           </plugin>
 
+          <plugin>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-java</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <!-- JDK 12+ can no longer generate Java 1.6 bytecode, so we require JDK 11.
+                         https://www.oracle.com/java/technologies/javase/12-relnote-issues.html -->
+                    <requireJavaVersion>
+                      <version>[11,12)</version>
+                    </requireJavaVersion>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
           <!-- Creates source jar -->
           <plugin>
             <artifactId>maven-source-plugin</artifactId>
-            <version>${maven-source-plugin.version}</version>
+            <version>3.2.1</version>
             <executions>
               <execution>
                 <id>attach-sources</id>
@@ -480,16 +631,10 @@
             </executions>
           </plugin>
 
-          <!-- Creates javadoc jar, skipping internal classes -->
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>${maven-javadoc-plugin.version}</version>
+            <version>3.2.0</version>
             <configuration>
-              <sourceFileExcludes>
-                <exclude>**/internal/*.java</exclude>
-                <exclude>**/Internal*.java</exclude>
-              </sourceFileExcludes>
-              <excludePackageNames>*.internal.*</excludePackageNames>
               <failOnError>false</failOnError>
               <!-- hush pedantic warnings: we don't put param and return on everything! -->
               <doclint>none</doclint>
