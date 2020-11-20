@@ -50,7 +50,7 @@
 
     <!-- version numbers that are used more than once -->
     <finagle.version>20.10.0</finagle.version>
-    <log4j.version>2.13.3</log4j.version>
+    <log4j.version>2.14.0</log4j.version>
     <auto-value.version>1.7.4</auto-value.version>
     <zipkin.version>2.22.2</zipkin.version>
     <zipkin-reporter.version>2.16.0</zipkin-reporter.version>
@@ -257,7 +257,7 @@
           </configuration>
         </plugin>
 
-        <!-- maven-dependency-plugin:get and Retrolambda should use a recent version. -->
+        <!-- maven-dependency-plugin:get should use a recent version. -->
         <plugin>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>${maven-dependency-plugin.version}</version>
@@ -310,7 +310,6 @@
         <version>${maven-compiler-plugin.version}</version>
         <inherited>true</inherited>
         <configuration>
-          <!-- Retrolambda will rewrite lambdas as Java 6 bytecode -->
           <source>1.8</source>
           <target>1.8</target>
           <!-- or die! com.sun.tools.javac.api.JavacTool -->
@@ -331,24 +330,6 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${maven-surefire-plugin.version}</version>
-      </plugin>
-
-      <plugin>
-        <groupId>net.orfjackal.retrolambda</groupId>
-        <artifactId>retrolambda-maven-plugin</artifactId>
-        <version>2.5.7</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>process-main</goal>
-            </goals>
-            <configuration>
-              <target>${main.java.version}</target>
-              <fork>true</fork>
-              <quiet>true</quiet>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <!-- Language-level aside, make sure Java 9 types and methods aren't used -->
@@ -385,10 +366,8 @@
             </goals>
             <configuration>
               <rules>
-                <!-- Cannot use JDK 15 until Retrolambda supports it
-                     https://github.com/luontola/retrolambda/issues/161 -->
                 <requireJavaVersion>
-                  <version>[11,15)</version>
+                  <version>[11,16)</version>
                 </requireJavaVersion>
               </rules>
             </configuration>
