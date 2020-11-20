@@ -1,8 +1,9 @@
-[![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin)
-[![Build Status](https://travis-ci.com/openzipkin/zipkin-finagle.svg?branch=master)](https://travis-ci.com/openzipkin/zipkin-finagle)
-[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.finagle2/zipkin-finagle_2.12.svg)](https://search.maven.org/search?q=g:io.brave.cassandra%20AND%20a:zipkin-finagle_2.12)
-
 # zipkin-finagle
+
+[![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin)
+[![Build Status](https://github.com/openzipkin/zipkin-finagle/workflows/test/badge.svg)](https://github.com/openzipkin/zipkin-finagle/actions?query=workflow%3Atest)
+[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.finagle2/zipkin-finagle_2.12.svg)](https://search.maven.org/search?q=g:io.zipkin.finagle2%20AND%20a:zipkin-finagle_2.12)
+
 Integration between Finagle tracing to Zipkin transports including http, kafka and scribe.
 
 ## Quick start
@@ -165,3 +166,13 @@ message_bytes | the count of encoded message bytes sent. This includes encoding 
 messages_dropped/exception_class_name+ | count of messages dropped broken down by cause.
 span_queue_size | last count of spans in the pending queue
 span_queue_bytes | last count of encoded span bytes in the pending queue
+
+## Artifacts
+The artifact published is `zipkin-finagle_2.12` under the group ID `io.zipkin.finagle2`
+
+### Library Releases
+Releases are at [Sonatype](https://oss.sonatype.org/content/repositories/releases) and [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.zipkin.finagle2%22)
+
+### Library Snapshots
+Snapshots are uploaded to [Sonatype](https://oss.sonatype.org/content/repositories/snapshots) after
+commits to master.
