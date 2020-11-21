@@ -168,7 +168,8 @@ span_queue_size | last count of spans in the pending queue
 span_queue_bytes | last count of encoded span bytes in the pending queue
 
 ## Artifacts
-The artifact published is `zipkin-finagle_2.12` under the group ID `io.zipkin.finagle2`
+All artifacts publish to the group ID "io.zipkin.finagle2". We use a common release version for all
+components.
 
 ### Library Releases
 Releases are at [Sonatype](https://oss.sonatype.org/content/repositories/releases) and [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.zipkin.finagle2%22)
