@@ -275,11 +275,6 @@
           </configuration>
         </plugin>
 
-        <plugin>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>${maven-dependency-plugin.version}</version>
-        </plugin>
-
         <!-- Uploads occur as a last step (which also adds checksums) -->
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
@@ -441,8 +436,6 @@
           <mapping>
             <!-- Don't use javadoc style as this makes code formatters break it by adding tags! -->
             <java>SLASHSTAR_STYLE</java>
-            <!-- build-bin/docker -->
-            <configure_docker>SCRIPT_STYLE</configure_docker>
             <!-- build-bin/git -->
             <login_git>SCRIPT_STYLE</login_git>
             <version_from_trigger_tag>SCRIPT_STYLE</version_from_trigger_tag>
@@ -467,7 +460,6 @@
             <exclude>LICENSE</exclude>
             <exclude>NOTICE</exclude>
             <exclude>**/*.md</exclude>
-            <exclude>**/*.bnd</exclude>
             <exclude>src/test/resources/**</exclude>
             <exclude>.github/**</exclude>
             <exclude>build-bin/*</exclude>
@@ -516,17 +508,6 @@
         <plugins>
           <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
-            <version>${maven-compiler-plugin.version}</version>
-            <inherited>true</inherited>
-            <configuration>
-              <!-- Retrolambda will rewrite lambdas as Java 6 bytecode -->
-              <source>1.8</source>
-              <target>1.8</target>
-              <compilerVersion>1.8</compilerVersion>
-              <!-- or die! com.sun.tools.javac.api.JavacTool -->
-              <fork>true</fork>
-              <showWarnings>true</showWarnings>
-            </configuration>
             <executions>
               <execution>
                 <!-- only use errorprone on main source tree -->
