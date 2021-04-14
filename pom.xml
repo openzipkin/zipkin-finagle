@@ -493,6 +493,9 @@
           <include>NOTICE</include>
         </includes>
       </resource>
+      <resource>
+        <directory>${project.basedir}/main/resources</directory>
+      </resource>
     </resources>
   </build>
 
