@@ -461,6 +461,7 @@
             <exclude>src/test/resources/**</exclude>
             <exclude>.github/**</exclude>
             <exclude>build-bin/*</exclude>
+            <exlcude>src/main/resources/META-INF/services/**</exlcude>
           </excludes>
           <strictCheck>true</strictCheck>
         </configuration>
