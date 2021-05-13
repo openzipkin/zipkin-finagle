@@ -495,7 +495,8 @@
         </includes>
       </resource>
       <resource>
-        <directory>${project.basedir}/main/resources</directory>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
       </resource>
     </resources>
   </build>
