@@ -20,10 +20,11 @@
   <parent>
     <groupId>io.zipkin.finagle2</groupId>
     <artifactId>zipkin-finagle-parent_2.12</artifactId>
-    <version>21.6.0</version>
+    <version>21.6.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>zipkin-finagle-http_2.12</artifactId>
+  <version>2.3.0</version>
   <name>Zipkin Finagle: Http</name>
 
   <properties>
