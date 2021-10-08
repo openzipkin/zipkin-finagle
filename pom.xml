@@ -54,7 +54,7 @@
     <auto-value.version>1.7.5</auto-value.version>
     <zipkin.version>2.23.2</zipkin.version>
     <zipkin-reporter.version>2.16.3</zipkin-reporter.version>
-    <okhttp.version>4.9.0</okhttp.version>
+    <okhttp.version>4.9.1</okhttp.version>
 
     <license.skip>${skipTests}</license.skip>
 
