@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2016-2021 The OpenZipkin Authors
+    Copyright 2016-2022 The OpenZipkin Authors
 
     Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
     in compliance with the License. You may obtain a copy of the License at
@@ -19,7 +19,7 @@
 
   <groupId>io.zipkin.finagle2</groupId>
   <artifactId>zipkin-finagle-parent_2.12</artifactId>
-  <version>21.8.1-SNAPSHOT</version>
+  <version>22.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -49,7 +49,7 @@
     <errorprone.version>2.4.0</errorprone.version>
 
     <!-- version numbers that are used more than once -->
-    <finagle.version>21.8.0</finagle.version>
+    <finagle.version>22.1.0</finagle.version>
     <log4j.version>2.14.0</log4j.version>
     <auto-value.version>1.7.5</auto-value.version>
     <zipkin.version>2.23.2</zipkin.version>
