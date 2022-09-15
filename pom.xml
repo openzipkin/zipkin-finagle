@@ -49,7 +49,7 @@
     <errorprone.version>2.4.0</errorprone.version>
 
     <!-- version numbers that are used more than once -->
-    <finagle.version>22.1.0</finagle.version>
+    <finagle.version>22.4.0</finagle.version>
     <log4j.version>2.17.0</log4j.version>
     <auto-value.version>1.7.5</auto-value.version>
     <zipkin.version>2.23.2</zipkin.version>
