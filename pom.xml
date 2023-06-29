@@ -51,7 +51,7 @@
     <!-- version numbers that are used more than once -->
     <finagle.version>22.7.0</finagle.version>
     <log4j.version>2.17.0</log4j.version>
-    <auto-value.version>1.10.1</auto-value.version>
+    <auto-value.version>1.10.2</auto-value.version>
     <zipkin.version>2.23.2</zipkin.version>
     <zipkin-reporter.version>2.16.3</zipkin-reporter.version>
     <okhttp.version>4.9.3</okhttp.version>
