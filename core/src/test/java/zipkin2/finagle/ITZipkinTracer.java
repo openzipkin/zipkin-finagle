@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -23,9 +23,9 @@ import com.twitter.finagle.tracing.Annotation.ServiceName;
 import com.twitter.finagle.tracing.Record;
 import java.util.List;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import zipkin2.DependencyLink;
 import zipkin2.Endpoint;
 import zipkin2.Span;
@@ -48,12 +48,12 @@ public abstract class ITZipkinTracer {
   protected InMemoryStatsReceiver stats = new InMemoryStatsReceiver();
   protected ZipkinTracer tracer;
 
-  @After public void closeTracer() {
+  @AfterEach public void closeTracer() {
     tracer.close();
     stats.clear();
   }
 
-  @Before public void createTracer() {
+  @BeforeEach public void createTracer() {
     tracer = newTracer("unknown");
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -21,9 +21,9 @@ import com.twitter.finagle.tracing.Record;
 import com.twitter.util.Duration;
 import com.twitter.util.Time;
 import java.util.List;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import scala.Option;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesEncoder;
@@ -48,12 +48,12 @@ public class ITScribeZipkinTracer extends ITZipkinTracer {
   InMemoryStorage storage = InMemoryStorage.newBuilder().build();
   ScribeCollector scribe;
 
-  @Before public void start() {
+  @BeforeEach public void start() {
     scribe = ScribeCollector.newBuilder().storage(storage).build();
     scribe.start();
   }
 
-  @After public void close() {
+  @AfterEach public void close() {
     scribe.close();
   }
 

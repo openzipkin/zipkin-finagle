@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,18 +16,16 @@ package zipkin2.finagle;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import zipkin2.Call;
-import zipkin2.CheckResult;
 import zipkin2.Span;
 import zipkin2.codec.BytesDecoder;
 import zipkin2.codec.BytesEncoder;
-import zipkin2.codec.Encoding;
 import zipkin2.codec.SpanBytesDecoder;
 import zipkin2.codec.SpanBytesEncoder;
 import zipkin2.reporter.BytesMessageEncoder;
-import zipkin2.reporter.Sender;
+import zipkin2.reporter.BytesMessageSender;
+import zipkin2.reporter.Encoding;
 
-public final class FakeSender extends Sender {
+public final class FakeSender implements BytesMessageSender {
   static FakeSender create() {
     return new FakeSender(
         Encoding.THRIFT,
@@ -93,17 +91,12 @@ public final class FakeSender extends Sender {
   /** close is typically called from a different thread */
   volatile boolean closeCalled;
 
-  @Override public Call<Void> sendSpans(List<byte[]> encodedSpans) {
+  @Override public void send(List<byte[]> encodedSpans) {
     if (closeCalled) throw new IllegalStateException("closed");
     List<Span> decoded = encodedSpans.stream()
         .map(decoder::decodeOne)
         .collect(Collectors.toList());
     onSpans.accept(decoded);
-    return Call.create(null);
-  }
-
-  @Override public CheckResult check() {
-    return CheckResult.OK;
   }
 
   @Override public void close() {

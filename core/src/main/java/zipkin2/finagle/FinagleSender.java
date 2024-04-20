@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,13 +18,12 @@ import com.twitter.util.Await;
 import com.twitter.util.Future;
 import com.twitter.util.Try;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import scala.runtime.AbstractFunction1;
 import scala.runtime.BoxedUnit;
-import zipkin2.Call;
-import zipkin2.Callback;
-import zipkin2.CheckResult;
+import zipkin2.reporter.Callback;
+import zipkin2.reporter.Call;
+import zipkin2.reporter.BytesMessageSender;
 import zipkin2.reporter.Sender;
 
 /** Receives the Finagle generated traces and sends them off. */
@@ -49,16 +48,6 @@ public abstract class FinagleSender<C extends ZipkinTracer.Config, Req, Rep> ext
   }
 
   protected abstract Req makeRequest(List<byte[]> spans) throws Exception;
-
-  /** sends an empty message to the configured host. */
-  @Override public CheckResult check() {
-    try {
-      sendSpans(Collections.emptyList()).execute();
-      return CheckResult.OK;
-    } catch (Exception e) {
-      return CheckResult.failed(e);
-    }
-  }
 
   @Override public void close() {
     closeFuture();

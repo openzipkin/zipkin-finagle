@@ -1,4 +1,8 @@
 #!/bin/sh  -ue
+#
+# Copyright The OpenZipkin Authors
+# SPDX-License-Identifier: Apache-2.0
+#
 
 # This script sets up anything needed for `./test`. This should not login to anything, as that
 # should be done in `configure_deploy`.

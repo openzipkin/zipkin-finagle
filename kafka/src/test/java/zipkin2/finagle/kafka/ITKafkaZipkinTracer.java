@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,7 +14,10 @@
 package zipkin2.finagle.kafka;
 
 import com.github.charithe.kafka.EphemeralKafkaBroker;
-import com.github.charithe.kafka.KafkaJunitRule;
+import com.github.charithe.kafka.KafkaHelper;
+import com.github.charithe.kafka.KafkaJunitExtension;
+import com.github.charithe.kafka.KafkaJunitExtensionConfig;
+import com.github.charithe.kafka.StartupMode;
 import com.twitter.finagle.tracing.Annotation.ClientRecv$;
 import com.twitter.finagle.tracing.Annotation.ClientSend$;
 import com.twitter.finagle.tracing.Annotation.Rpc;
@@ -28,9 +31,9 @@ import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
 import scala.Option;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesDecoder;
@@ -46,14 +49,20 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.awaitility.Awaitility.await;
 import static scala.collection.JavaConverters.mapAsJavaMap;
 
+@ExtendWith(KafkaJunitExtension.class)
+@KafkaJunitExtensionConfig(startupMode = StartupMode.WAIT_FOR_STARTUP)
 public class ITKafkaZipkinTracer extends ITZipkinTracer {
   final Option<Duration> none = Option.empty(); // avoid having to force generics
-  EphemeralKafkaBroker broker = EphemeralKafkaBroker.create();
-  @Rule public KafkaJunitRule kafka = new KafkaJunitRule(broker).waitForStartup();
-
+  EphemeralKafkaBroker broker;
+  KafkaHelper kafkaHelper;
   KafkaZipkinTracer.Config config;
 
-  @Before public void createTracer() {
+  @BeforeEach public void setUp(KafkaHelper kafkaHelper, EphemeralKafkaBroker broker) {
+      this.broker = broker;
+      this.kafkaHelper = kafkaHelper;
+  }
+
+  @BeforeEach public void createTracer() {
     config = KafkaZipkinTracer.Config.builder()
         .bootstrapServers(broker.getBrokerList().get())
         .initialSampleRate(1.0f).build();
@@ -66,8 +75,8 @@ public class ITKafkaZipkinTracer extends ITZipkinTracer {
   }
 
   @Override protected List<List<Span>> getTraces() throws Exception {
-    KafkaConsumer<byte[], byte[]> consumer = kafka.helper().createByteConsumer();
-    return kafka.helper().consume(config.topic(), consumer, 1).get()
+    KafkaConsumer<byte[], byte[]> consumer = kafkaHelper.createByteConsumer();
+    return kafkaHelper.consume(config.topic(), consumer, 1).get()
         .stream()
         .map(ConsumerRecord::value)
         .map(SpanBytesDecoder.JSON_V2::decodeList)

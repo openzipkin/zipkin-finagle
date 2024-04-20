@@ -1,4 +1,8 @@
 #!/bin/sh -ue
+#
+# Copyright The OpenZipkin Authors
+# SPDX-License-Identifier: Apache-2.0
+#
 
 # This script runs the tests of the project.
 #

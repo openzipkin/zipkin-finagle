@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -26,9 +26,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
-import zipkin2.codec.Encoding;
+
 import zipkin2.finagle.FinagleSender;
 import zipkin2.reporter.BytesMessageEncoder;
+import zipkin2.reporter.Encoding;
 
 /** Receives the Finagle generated traces and sends them off to Zipkin via Http. */
 final class HttpSender extends FinagleSender<HttpZipkinTracer.Config, Request, Response> {
@@ -48,8 +49,12 @@ final class HttpSender extends FinagleSender<HttpZipkinTracer.Config, Request, R
     return 5 * 1024 * 1024; // TODO: enforce
   }
 
-  @Override public int messageSizeInBytes(List<byte[]> list) {
-    return encoding().listSizeInBytes(list);
+  @Override public int messageSizeInBytes(int encodedSizeInBytes) {
+    return encoding().listSizeInBytes(encodedSizeInBytes);
+  }
+
+  @Override public int messageSizeInBytes(List<byte[]> encodedSpans) {
+    return encoding().listSizeInBytes(encodedSpans);
   }
 
   @Override protected Service<Request, Response> newClient(HttpZipkinTracer.Config config) {
