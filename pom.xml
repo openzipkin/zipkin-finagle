@@ -18,7 +18,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.zipkin.finagle2</groupId>
-  <artifactId>zipkin-finagle-parent_2.13</artifactId>
+  <artifactId>zipkin-finagle-parent_2.12</artifactId>
   <version>23.0.0</version>
   <packaging>pom</packaging>
 
@@ -150,7 +150,7 @@
   <dependencies>
     <dependency>
       <groupId>com.twitter</groupId>
-      <artifactId>finagle-zipkin-core_2.13</artifactId>
+      <artifactId>finagle-zipkin-core_2.12</artifactId>
       <version>${finagle.version}</version>
       <exclusions>
         <exclusion>

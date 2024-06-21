@@ -19,11 +19,11 @@
 
   <parent>
     <groupId>io.zipkin.finagle2</groupId>
-    <artifactId>zipkin-finagle-parent_2.13</artifactId>
+    <artifactId>zipkin-finagle-parent_2.12</artifactId>
     <version>23.0.0</version>
   </parent>
 
-  <artifactId>zipkin-finagle-http_2.13</artifactId>
+  <artifactId>zipkin-finagle-http_2.12</artifactId>
   <version>23.0.0</version>
   <name>Zipkin Finagle: Http</name>
 
@@ -34,19 +34,19 @@
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>zipkin-finagle_2.13</artifactId>
+      <artifactId>zipkin-finagle_2.12</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.twitter</groupId>
-      <artifactId>finagle-http_2.13</artifactId>
+      <artifactId>finagle-http_2.12</artifactId>
       <version>${finagle.version}</version>
     </dependency>
 
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>zipkin-finagle_2.13</artifactId>
+      <artifactId>zipkin-finagle_2.12</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

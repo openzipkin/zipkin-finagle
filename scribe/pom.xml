@@ -19,11 +19,11 @@
 
   <parent>
     <groupId>io.zipkin.finagle2</groupId>
-    <artifactId>zipkin-finagle-parent_2.13</artifactId>
+    <artifactId>zipkin-finagle-parent_2.12</artifactId>
     <version>23.0.0</version>
   </parent>
 
-  <artifactId>zipkin-finagle-scribe_2.13</artifactId>
+  <artifactId>zipkin-finagle-scribe_2.12</artifactId>
   <version>23.0.0</version>
   <name>Zipkin Finagle: Scribe</name>
 
@@ -34,13 +34,13 @@
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>zipkin-finagle_2.13</artifactId>
+      <artifactId>zipkin-finagle_2.12</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.twitter</groupId>
-      <artifactId>finagle-thrift_2.13</artifactId>
+      <artifactId>finagle-thrift_2.12</artifactId>
       <version>${finagle.version}</version>
     </dependency>
 
@@ -51,7 +51,7 @@
 
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>zipkin-finagle_2.13</artifactId>
+      <artifactId>zipkin-finagle_2.12</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
