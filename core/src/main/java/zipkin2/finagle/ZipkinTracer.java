@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -128,7 +128,7 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
   }
 
   ZipkinTracer(Reporter<Span> reporter, Config config, StatsReceiver stats) {
-    this(reporter, new RawZipkinTracer(reporter, stats, config.localServiceName()), config);
+    this(reporter, new RawZipkinTracer(reporter, stats, config.localServiceName(), config.initialSampleRate()), config);
   }
 
   private ZipkinTracer(Reporter<Span> reporter, RawZipkinTracer underlying, Config config) {
@@ -176,13 +176,16 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
 
   static final class RawZipkinTracer implements Tracer {
     private final SpanRecorder recorder;
+    private final float sampleRate;
 
     /**
      * @param stats We generate stats to keep track of traces sent, failures and so on
+     * @param sampleRate 
      */
-    RawZipkinTracer(Reporter<Span> reporter, StatsReceiver stats, String localServiceName) {
+    RawZipkinTracer(Reporter<Span> reporter, StatsReceiver stats, String localServiceName, float sampleRate) {
       this.recorder =
           new SpanRecorder(reporter, stats, DefaultTimer.getInstance(), localServiceName);
+      this.sampleRate = sampleRate;
     }
 
     @Override public Option<Object> sampleTrace(TraceId traceId) {
@@ -203,6 +206,11 @@ public class ZipkinTracer extends SamplingTracer implements Closable {
      */
     @Override public void record(Record record) {
       recorder.record(record);
+    }
+
+    @Override
+    public float getSampleRate() {
+        return sampleRate;
     }
   }
 

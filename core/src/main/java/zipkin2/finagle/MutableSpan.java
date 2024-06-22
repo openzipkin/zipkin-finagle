@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -25,7 +25,6 @@ import zipkin2.v1.V1BinaryAnnotation;
 import zipkin2.v1.V1Span;
 
 import static com.twitter.finagle.thrift.thrift.Constants.CLIENT_RECV;
-import static com.twitter.finagle.thrift.thrift.Constants.CLIENT_SEND;
 import static com.twitter.finagle.thrift.thrift.Constants.SERVER_SEND;
 
 final class MutableSpan {

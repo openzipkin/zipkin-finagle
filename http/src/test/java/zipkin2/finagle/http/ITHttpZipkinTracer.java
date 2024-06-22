@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -31,8 +31,10 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import okhttp3.tls.HandshakeCertificates;
 import okhttp3.tls.HeldCertificate;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.Extensions;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import scala.Option;
 import zipkin.http.path$;
 import zipkin2.Span;
@@ -40,7 +42,7 @@ import zipkin2.finagle.FinagleTestObjects;
 import zipkin2.finagle.ITZipkinTracer;
 import zipkin2.finagle.ZipkinTracer;
 import zipkin2.finagle.http.HttpZipkinTracer.Config;
-import zipkin2.junit.ZipkinRule;
+import zipkin2.junit5.ZipkinExtension;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -53,7 +55,7 @@ import static zipkin2.finagle.FinagleTestObjects.TODAY;
 import static zipkin2.finagle.FinagleTestObjects.root;
 
 public class ITHttpZipkinTracer extends ITZipkinTracer {
-  @Rule public ZipkinRule http = new ZipkinRule();
+  @RegisterExtension public ZipkinExtension http = new ZipkinExtension();
   String host = "localhost:" + URI.create(http.httpUrl()).getPort();
   Config config = Config.builder().initialSampleRate(1.0f).host(host).build();
 

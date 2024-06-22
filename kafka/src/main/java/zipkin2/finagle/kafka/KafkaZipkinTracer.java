@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -28,7 +28,7 @@ import java.util.Iterator;
 import scala.collection.mutable.StringBuilder;
 import scala.runtime.BoxedUnit;
 import zipkin.localServiceName$;
-import zipkin2.codec.Encoding;
+import zipkin2.reporter.Encoding;
 import zipkin2.finagle.ZipkinTracer;
 import zipkin2.reporter.kafka.KafkaSender;
 

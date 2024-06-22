@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -20,7 +20,6 @@ import com.twitter.util.Throwables;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import scala.collection.Seq;
-import scala.collection.immutable.Seq$;
 import zipkin2.reporter.ReporterMetrics;
 
 public final class ReporterMetricsAdapter implements ReporterMetrics {
@@ -58,7 +57,7 @@ public final class ReporterMetricsAdapter implements ReporterMetrics {
     Seq<String> causes = Throwables.mkString(cause);
 
     // Manually implement inits() as Traversable was replaced with Iterable in 2.13
-    messagesDropped.counter(Seq$.MODULE$.empty()).incr();
+    messagesDropped.counter().incr();
     int causeCount = causes.size();
     for (int i = 1; i <= causeCount; i++) {
       messagesDropped.counter(causes.slice(0, i).toSeq()).incr();
