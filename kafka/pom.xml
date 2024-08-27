@@ -11,11 +11,11 @@
   <parent>
     <groupId>io.zipkin.finagle2</groupId>
     <artifactId>zipkin-finagle-parent_2.12</artifactId>
-    <version>23.0.0</version>
+    <version>23.0.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>zipkin-finagle-kafka_2.12</artifactId>
-  <version>23.0.0</version>
+  <version>23.0.1-SNAPSHOT</version>
   <name>Zipkin Finagle: Kafka</name>
 
   <properties>
