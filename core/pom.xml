@@ -11,11 +11,11 @@
   <parent>
     <groupId>io.zipkin.finagle2</groupId>
     <artifactId>zipkin-finagle-parent_2.12</artifactId>
-    <version>23.0.2-SNAPSHOT</version>
+    <version>23.0.2</version>
   </parent>
 
   <artifactId>zipkin-finagle_2.12</artifactId>
-  <version>23.0.2-SNAPSHOT</version>
+  <version>23.0.2</version>
   <name>Zipkin Finagle: Core</name>
 
   <properties>
