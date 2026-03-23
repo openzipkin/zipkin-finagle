@@ -4,13 +4,14 @@ name: deploy
 
 # We deploy on master and release versions, regardless of if the commit is
 # documentation-only or not.
-#
-# See https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
-on:
+on:  # yamllint disable-line rule:truthy
   push:
-    # Don't deploy tags as they conflict with [maven-release-plugin] prepare release MAJOR.MINOR.PATCH
-    tags: ''
-    branches: master
+    branches:
+      - master
+    # Don't deploy tags because the same commit for MAJOR.MINOR.PATCH is also
+    # on master: Redundant deployment of a release version will fail uploading.
+    tags-ignore:
+      - '*'
 
 jobs:
   deploy:
